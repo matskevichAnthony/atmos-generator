@@ -51,6 +51,7 @@ webm/opus, который отдаёт стандартный MediaRecorder.
 | `image.js` | IMAGE UNIT: `loadImage`/`genImage`, `synthSpectrum`/`carve`/`bend`, `applyImage` | новые режимы/мотивы картинок |
 | `state.js` | `state` + `saveState`/`restoreState` (localStorage) | новые сохраняемые поля |
 | `engine.js` | аудио: транспорт, буфер-луп, офлайн рендер-конвейер | тайминг записи, кэш, фейды |
+| `viz.js` | ambient-визуализация: фон-спектр, CRT, мини-дисплеи модулей | вид реактивного слоя |
 | `corruptor.js` | только DOM: кнопки, дисплеи, раскладка | UI |
 
 ### Поток данных
@@ -103,6 +104,24 @@ seed + opts ──► source.genSource ──► modules.buildPatch ──► с
 - **Пост-модуль (RACK B):** добавь объект в `POST_MODULES` (`dsp.js`):
   `{ id, name, desc, process(chs, sr, amt, rng, curve) }` — мутирует `[L, R]` на месте.
   Для спектра используй `stft(ch, (re, im, tNorm) => …)`.
+
+### Визуальный слой (`viz.js`)
+
+Чисто декоративный: читает `state`/`engine`, ничего не мутирует. Один rAF-цикл:
+- **фон** (`.bgfield`, fixed за корпусом) — халтоновое LED-поле; спектр считается
+  **своим FFT из `dsp.js` по мастер-отводу** (`engine.getScope()`), поэтому
+  одинаково работает для живого стрима и corrupted-лупа. Idle = редкое тусклое
+  мерцание («almost dead»), звук = поле просыпается; сильный бас сдвигает ряды
+  (scan-fragment глитч), красная точка — пик столбца.
+- **CRT** — dot-matrix спектр под красной осциллограммой.
+- **мини-дисплеи модулей** (`.mod__viz`, 23 шт.) — процедурные dot-matrix
+  паттерны; фаза анимируется только когда модуль ON и играет звук.
+- Глитч-анимация `.is-glitch` (clip-path) вешается из `corruptor.js` только при
+  «смене реальности»: RND SOURCE / AUTO WIRE / ⌁ NOTES.
+- Правило производительности: только `fillRect`/`transform/opacity`, никаких
+  blur на больших канвасах; `prefers-reduced-motion` отключает анимацию.
+- CSS-примета: `body { align-items: flex-start }` обязателен — иначе flex-stretch
+  зажимает `.unit` на высоту вьюпорта и контент вываливается из корпуса.
 
 ### Известные подводные камни (важно для правок аудио)
 

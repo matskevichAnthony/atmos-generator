@@ -7,6 +7,7 @@ import { POST_MODULES } from './dsp.js'
 import { loadImage, genImage } from './image.js'
 import { state, saveState, restoreState } from './state.js'
 import * as engine from './engine.js'
+import { startViz } from './viz.js'
 
 const AUTOWIRE_MIN = 2
 const AUTOWIRE_MAX = 6
@@ -172,6 +173,7 @@ const renderWav = async () => {
 const reroll = () => {
   state.seed = randomSeedHex()
   regen()
+  flashGlitch()
   setStatus('NEW SOURCE')
 }
 
@@ -184,32 +186,17 @@ const autowire = () => {
     if (st.on) { st.amt = 20 + Math.floor(Math.random() * 81); st.nonce++ }
   })
   regen()
+  flashGlitch()
   setStatus(`WIRED ${count} MODULES`)
 }
 
-// ── CRT scope ──────────────────────────────────────────────
-const drawScope = () => {
-  const canvas = $('[data-js-scope]')
-  const ctx = canvas.getContext('2d')
-  const scope = engine.getScope()
-  ctx.fillStyle = 'rgba(2,7,3,0.35)'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  if (scope) {
-    ctx.strokeStyle = '#ff0000'
-    ctx.shadowColor = '#ff0000'
-    ctx.shadowBlur = 5
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    const mid = canvas.height / 2
-    for (let x = 0; x < canvas.width; x++) {
-      const v = scope[Math.floor((x / canvas.width) * scope.length)] || 0
-      const y = mid - v * mid * 0.85
-      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-    }
-    ctx.stroke()
-    ctx.shadowBlur = 0
-  }
-  requestAnimationFrame(drawScope)
+// glitches appear only when reality changes (new seed / rewiring / new notes)
+const flashGlitch = () => {
+  document.querySelectorAll('[data-js-srcinfo], .plate__brand b').forEach((el) => {
+    el.classList.remove('is-glitch')
+    void el.offsetWidth // restart the animation
+    el.classList.add('is-glitch')
+  })
 }
 
 // ── racks ──────────────────────────────────────────────────
@@ -221,6 +208,7 @@ const modCard = (m, attr) => `
         <button class="mod__dice" data-mod-dice title="перебросить внутренности">⌁</button>
       </header>
       <p class="mod__desc">${m.desc}</p>
+      <canvas class="mod__viz" data-mod-viz width="176" height="42"></canvas>
       <input type="range" class="fader fader--mini" data-mod-amt min="0" max="100" step="1">
       <output class="mod__note" data-mod-note>OFF</output>
     </section>`
@@ -376,6 +364,7 @@ const init = () => {
     if (!state.patch.pitched) { setStatus('SOURCE NOT PITCHED — SET NOTES'); return }
     state.noteNonce++
     regen()
+    flashGlitch()
     setStatus(`NOTES ▸ ${state.patch.source.names.join(' ')}`)
   })
 
@@ -396,7 +385,7 @@ const init = () => {
   syncControls()
   regen()
   setStatus('READY')
-  requestAnimationFrame(drawScope)
+  startViz()
 
   // a generated image survives refresh via its seed
   if (state.image.imgSeed && state.image.mode !== 'off') {
