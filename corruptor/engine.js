@@ -40,7 +40,6 @@ export const playLive = (code) => {
   everPlayed = true
   evaluate(code)
 }
-export const evaluateLive = evaluate
 export const stopAll = () => { stopLoop(); hush() }
 export const loadSampleBank = (url) => samples(url)
 

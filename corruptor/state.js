@@ -24,6 +24,15 @@ export const state = {
 }
 state.modules.rust.on = true
 
+// factory defaults for generative settings (keeps seed, banks, playing)
+export const resetState = () => {
+  Object.assign(state, { shape: 'loop', zone: 'any', notes: 'auto', noteNonce: 0, len: 2, curve: 'collapse' })
+  state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
+  MODULES.forEach((m) => { state.modules[m.id] = { on: false, amt: 60, nonce: 0 } })
+  POST_MODULES.forEach((m) => { state.post[m.id] = { on: false, amt: 60, nonce: 0 } })
+  state.modules.rust.on = true
+}
+
 export const saveState = () => {
   const { seed, shape, zone, notes, noteNonce, len, curve, modules, post } = state
   const image = { mode: state.image.mode, amt: state.image.amt, imgSeed: state.image.imgSeed }

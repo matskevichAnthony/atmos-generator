@@ -5,7 +5,8 @@ import { randomSeedHex } from './rng.js'
 import { MODULES, buildPatch } from './modules.js'
 import { POST_MODULES } from './dsp.js'
 import { loadImage, genImage } from './image.js'
-import { state, saveState, restoreState } from './state.js'
+import { state, saveState, restoreState, resetState } from './state.js'
+import { PRESETS } from './presets.js'
 import * as engine from './engine.js'
 import { startViz } from './viz.js'
 
@@ -71,6 +72,7 @@ const syncControls = () => {
   $('[data-js-len]').value = state.len
   $('[data-js-imgamt]').value = state.image.amt
   $('[data-js-imgamtout]').textContent = state.image.amt
+  $('[data-js-imgdrop]').classList.toggle('has-img', !!state.image.data)
 }
 
 const regen = () => {
@@ -121,8 +123,7 @@ const refreshAudio = () => {
   if (isCorrupt()) {
     scheduleProcessed()
   } else {
-    engine.stopLoop()
-    engine.evaluateLive(state.patch.code)
+    engine.playLive(state.patch.code) // resumes the context (else silence on loop→live)
     setStatus('LIVE · RACK A')
   }
 }
@@ -177,6 +178,28 @@ const reroll = () => {
   setStatus('NEW SOURCE')
 }
 
+const reset = () => {
+  resetState()
+  syncControls()
+  regen()
+  flashGlitch()
+  setStatus('RESET ▸ DEFAULT')
+}
+
+const applyPreset = (p) => {
+  resetState()
+  Object.assign(state, {
+    seed: p.seed, shape: p.shape, zone: p.zone ?? 'any', notes: p.notes ?? 'auto',
+    noteNonce: 0, len: p.len ?? 2, curve: p.curve ?? 'collapse',
+  })
+  Object.entries(p.a ?? {}).forEach(([id, amt]) => { if (state.modules[id]) state.modules[id] = { on: true, amt, nonce: 1 } })
+  Object.entries(p.b ?? {}).forEach(([id, amt]) => { if (state.post[id]) state.post[id] = { on: true, amt, nonce: 1 } })
+  syncControls()
+  regen()
+  flashGlitch()
+  setStatus(`PRESET ▸ ${p.name}`)
+}
+
 const autowire = () => {
   const count = AUTOWIRE_MIN + Math.floor(Math.random() * (AUTOWIRE_MAX - AUTOWIRE_MIN + 1))
   const chosen = new Set([...MODULES].sort(() => Math.random() - 0.5).slice(0, count).map((m) => m.id))
@@ -216,6 +239,11 @@ const modCard = (m, attr) => `
 const renderRack = () => {
   $('[data-js-rack]').innerHTML = MODULES.map((m) => modCard(m, 'data-mod')).join('')
   $('[data-js-postrack]').innerHTML = POST_MODULES.map((m) => modCard(m, 'data-post')).join('')
+}
+
+const renderPresets = () => {
+  $('[data-js-presets]').innerHTML = PRESETS.map((p, i) =>
+    `<button class="preset" data-preset="${i}"><b>${p.name}</b><i>${p.tag}</i></button>`).join('')
 }
 
 const wireRack = (container, stateMap, attr) => {
@@ -317,9 +345,16 @@ const loadBanks = async () => {
 const init = () => {
   restoreState()
   renderRack()
+  renderPresets()
   wireRack($('[data-js-rack]'), state.modules, 'data-mod')
   wireRack($('[data-js-postrack]'), state.post, 'data-post')
   wireImageUnit()
+
+  $('[data-js-presets]').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-preset]')
+    if (btn) applyPreset(PRESETS[+btn.dataset.preset])
+  })
+  $('[data-js-reset]').addEventListener('click', reset)
 
   document.querySelectorAll('[data-curve]').forEach((b) =>
     b.addEventListener('click', () => { state.curve = b.dataset.curve; regen() }))
