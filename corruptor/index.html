@@ -72,6 +72,17 @@
     </section>
 
     <section class="module">
+      <h2>TEMPO · BPM</h2>
+      <input type="number" class="numfield" data-js-bpm min="60" max="200" step="1" value="138">
+      <h2>ДЛИНА · ТАКТЫ (КВАНТ) <output data-js-barsout></output></h2>
+      <div class="btnrow btnrow--wrap">
+        <button class="key" data-bars="0.25">¼</button>
+        <button class="key" data-bars="0.5">½</button>
+        <button class="key" data-bars="1">1</button>
+        <button class="key" data-bars="2">2</button>
+        <button class="key" data-bars="4">4</button>
+        <button class="key" data-bars="8">8</button>
+      </div>
       <h2>LENGTH · SEC — <output data-js-lenrole>—</output></h2>
       <input type="number" class="numfield" data-js-len min="0.2" max="120" step="0.1" value="2">
       <div class="btnrow btnrow--wrap">

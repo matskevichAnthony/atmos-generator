@@ -135,14 +135,18 @@ export const MODULES = [
 
 // ── assembly: source + enabled modules → strudel code ──────
 export const buildPatch = (seedHex, opts, modState) => {
-  const source = genSource(seedHex, opts)
+  // a sample-only module (WARP) is usable whenever a bank is loaded; force the
+  // source to a sample so it actually has something to work on
+  const bankLoaded = opts.banks.length > 0
+  const forceSample = bankLoaded && MODULES.some((m) => m.sampleOnly && modState[m.id]?.on)
+  const source = genSource(seedHex, { ...opts, forceSample })
   const cpm = r2((60 * source.cycles) / opts.len)
   const ctx = { pitched: source.pitched, isSample: source.isSample, len: opts.len }
 
   const notes = {}
   let chain = ''
   const active = MODULES
-    .filter((m) => modState[m.id]?.on && (!m.sampleOnly || source.isSample))
+    .filter((m) => modState[m.id]?.on && (!m.sampleOnly || bankLoaded))
     .sort((a, b) => a.stage - b.stage)
 
   for (const m of active) {

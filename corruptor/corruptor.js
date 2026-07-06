@@ -17,6 +17,9 @@ const AUTOWIRE_MAX = 6
 const $ = (sel) => document.querySelector(sel)
 const setStatus = (text) => { $('[data-js-status]').textContent = text }
 
+// bars → seconds at a tempo (4/4, 4 beats per bar) — loops land on the grid
+const barsToSec = (bars, bpm) => Math.round((bars * 240 / bpm) * 100) / 100
+
 // LENGTH means something different per source shape
 const LEN_ROLE = {
   shot: { label: 'ДЛИТЕЛЬНОСТЬ УДАРА', hint: 'SHOT: длина = насколько долго тянется сам удар (0.4 — щелчок, 4 — наплыв).' },
@@ -54,7 +57,7 @@ const syncRack = () => {
   MODULES.forEach((m) => {
     const el = $(`[data-mod="${m.id}"]`)
     const st = state.modules[m.id]
-    const blocked = m.sampleOnly && !state.patch.isSample
+    const blocked = m.sampleOnly && !state.banks.length // stable: depends on bank, not the random source
     el.classList.toggle('is-on', st.on && !blocked)
     el.classList.toggle('is-blocked', blocked)
     el.querySelector('[data-mod-note]').textContent =
@@ -78,6 +81,9 @@ const syncControls = () => {
   document.querySelectorAll('[data-notes]').forEach((b) => b.classList.toggle('is-on', b.dataset.notes === state.notes))
   document.querySelectorAll('[data-imgmode]').forEach((b) => b.classList.toggle('is-on', b.dataset.imgmode === state.image.mode))
   $('[data-js-len]').value = state.len
+  $('[data-js-bpm]').value = state.bpm
+  document.querySelectorAll('[data-bars]').forEach((b) => b.classList.toggle('is-on', state.bars !== null && +b.dataset.bars === state.bars))
+  $('[data-js-barsout]').textContent = state.bars !== null ? `= ${state.len}с @ ${state.bpm}bpm` : ''
   $('[data-js-imgamt]').value = state.image.amt
   $('[data-js-imgamtout]').textContent = state.image.amt
   $('[data-js-imgdrop]').classList.toggle('has-img', !!state.image.data)
@@ -434,15 +440,29 @@ const init = () => {
     setStatus(`NOTES ▸ ${state.patch.source.names.join(' ')}`)
   })
 
-  $('[data-js-len]').addEventListener('change', (e) => {
-    state.len = Math.min(120, Math.max(0.2, +e.target.value || 2))
-    e.target.value = state.len
+  // manual seconds = free-form → drop the bar quantization
+  const setLenSeconds = (sec) => {
+    state.len = Math.min(120, Math.max(0.2, sec || 2))
+    state.bars = null
+    syncControls()
+    regen()
+  }
+  $('[data-js-len]').addEventListener('change', (e) => setLenSeconds(+e.target.value))
+  document.querySelectorAll('[data-len]').forEach((b) =>
+    b.addEventListener('click', () => setLenSeconds(+b.dataset.len)))
+
+  $('[data-js-bpm]').addEventListener('change', (e) => {
+    state.bpm = Math.min(200, Math.max(60, Math.round(+e.target.value) || 138))
+    e.target.value = state.bpm
+    if (state.bars) state.len = barsToSec(state.bars, state.bpm) // keep the quantized length in sync
+    syncControls()
     regen()
   })
-  document.querySelectorAll('[data-len]').forEach((b) =>
+  document.querySelectorAll('[data-bars]').forEach((b) =>
     b.addEventListener('click', () => {
-      state.len = +b.dataset.len
-      $('[data-js-len]').value = state.len
+      state.bars = +b.dataset.bars
+      state.len = barsToSec(state.bars, state.bpm)
+      syncControls()
       regen()
     }))
 

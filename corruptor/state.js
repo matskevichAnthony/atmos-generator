@@ -14,6 +14,8 @@ export const state = {
   notes: 'auto',
   noteNonce: 0,
   len: 2,
+  bpm: 138,
+  bars: null, // when set, len is quantized to this many bars at bpm
   banks: [],
   playing: false,
   patch: null,
@@ -26,7 +28,7 @@ state.modules.rust.on = true
 
 // factory defaults for generative settings (keeps seed, banks, playing)
 export const resetState = () => {
-  Object.assign(state, { shape: 'loop', zone: 'any', notes: 'auto', noteNonce: 0, len: 2, curve: 'collapse' })
+  Object.assign(state, { shape: 'loop', zone: 'any', notes: 'auto', noteNonce: 0, len: 2, bars: null, curve: 'collapse' })
   state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
   MODULES.forEach((m) => { state.modules[m.id] = { on: false, amt: 60, nonce: 0 } })
   POST_MODULES.forEach((m) => { state.post[m.id] = { on: false, amt: 60, nonce: 0 } })
@@ -34,9 +36,9 @@ export const resetState = () => {
 }
 
 export const saveState = () => {
-  const { seed, shape, zone, notes, noteNonce, len, curve, modules, post } = state
+  const { seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post } = state
   const image = { mode: state.image.mode, amt: state.image.amt, imgSeed: state.image.imgSeed }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, shape, zone, notes, noteNonce, len, curve, modules, post, image }))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post, image }))
 }
 
 export const restoreState = () => {
@@ -46,7 +48,7 @@ export const restoreState = () => {
     Object.assign(state, {
       seed: saved.seed, shape: saved.shape, zone: saved.zone,
       notes: saved.notes ?? 'auto', noteNonce: saved.noteNonce ?? 0,
-      len: saved.len, curve: saved.curve,
+      len: saved.len, bpm: saved.bpm ?? 138, bars: saved.bars ?? null, curve: saved.curve,
     })
     for (const [id, st] of Object.entries(saved.modules ?? {})) if (state.modules[id]) Object.assign(state.modules[id], st)
     for (const [id, st] of Object.entries(saved.post ?? {})) if (state.post[id]) Object.assign(state.post[id], st)

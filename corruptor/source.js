@@ -39,7 +39,8 @@ export const genSource = (seedHex, opts) => {
   const pool = wantNotes
     ? ['osc', 'osc', 'fm']
     : ['osc', 'osc', 'fm', 'noise', ...(banks.length ? ['sample', 'sample'] : [])]
-  const kind = t.pick(pool)
+  let kind = t.pick(pool)
+  if (opts.forceSample && banks.length && !wantNotes) kind = 'sample' // WARP needs a sample source
   const pitched = kind === 'osc' || kind === 'fm'
   const isSample = kind === 'sample'
 

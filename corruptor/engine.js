@@ -146,15 +146,24 @@ const processBuffer = (clean, state) => {
   return { L, R, sampleRate }
 }
 
+const peakOf = (a) => { let p = 0; for (let i = 0; i < a.length; i += 7) { const v = Math.abs(a[i]); if (v > p) p = v } return p }
+
 // one clean capture, cached by (code, seconds). Only a source/RACK-A change
 // (new code) or a longer window forces a recapture; image/RACK-B/curve reuse it.
+// A capture can come back silent if the context wasn't warm yet — retry so a
+// bad capture never gets cached (that was the "signal vanishes" bug).
 const getClean = async (code, seconds, onNeedCapture) => {
   const sig = `${code}#${seconds}`
-  if (!cleanCache || cleanCache.sig !== sig) {
-    if (onNeedCapture) onNeedCapture()
-    const clean = await captureClean(code, seconds)
-    cleanCache = { sig, ...clean }
+  if (cleanCache && cleanCache.sig === sig) return cleanCache
+  if (onNeedCapture) onNeedCapture()
+  let clean
+  for (let attempt = 0; attempt < 3; attempt++) {
+    clean = await captureClean(code, seconds)
+    if (peakOf(clean.L) > 0.005) break
+    resumeAudio()
+    await sleep(200)
   }
+  cleanCache = { sig, ...clean }
   return cleanCache
 }
 
