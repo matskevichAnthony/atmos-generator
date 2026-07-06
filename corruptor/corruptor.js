@@ -57,7 +57,9 @@ const syncRack = () => {
   MODULES.forEach((m) => {
     const el = $(`[data-mod="${m.id}"]`)
     const st = state.modules[m.id]
-    const blocked = m.sampleOnly && !state.banks.length // stable: depends on bank, not the random source
+    // MUST be a real boolean — classList.toggle(cls, undefined) FLIPS instead of
+    // forcing false, which made every RACK A card strobe blocked on each change
+    const blocked = Boolean(m.sampleOnly) && !state.banks.length
     el.classList.toggle('is-on', st.on && !blocked)
     el.classList.toggle('is-blocked', blocked)
     el.querySelector('[data-mod-note]').textContent =
@@ -90,6 +92,10 @@ const syncControls = () => {
 }
 
 const syncLenRole = () => {
+  // one-shots aren't a loop → BPM / bar quantization is meaningless, hide it
+  const isShot = state.shape === 'shot'
+  $('[data-js-tempo]').style.display = isShot ? 'none' : ''
+  if (isShot && state.bars !== null) state.bars = null
   const role = LEN_ROLE[state.shape]
   $('[data-js-lenrole]').textContent = role.label
   const trunc = state.len > PREVIEW_CAP
@@ -216,11 +222,21 @@ const reroll = () => {
 }
 
 const reset = () => {
+  engine.clearCache()
   resetState()
+  state.seed = randomSeedHex()
+  state.banks = []
+  state.bpm = 138
+  state.bars = null
+  state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
+  Object.values(state.modules).forEach((m) => { m.on = false })
+  $('[data-js-bankurl]').value = ''
+  $('[data-js-banknames]').value = ''
+  $('[data-js-imgdrop]').classList.remove('has-img')
   syncControls()
   regen()
   flashGlitch()
-  setStatus('RESET ▸ DEFAULT')
+  setStatus('RESET ▸ CLEAN SLATE')
 }
 
 const applyPreset = (p) => {

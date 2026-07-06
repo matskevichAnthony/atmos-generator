@@ -74,8 +74,17 @@ export const playLoop = (L, R, sampleRate) => {
 }
 
 export const stopLoop = () => {
-  if (bufferSource) { try { bufferSource.stop() } catch (e) { /* already stopped */ } bufferSource = null }
-  loopAnalyser = null
+  // disconnect, don't just drop refs — orphaned nodes stayed wired to
+  // destination and piled up over many loops, degrading audio over time
+  if (bufferSource) {
+    try { bufferSource.stop() } catch (e) { /* already stopped */ }
+    try { bufferSource.disconnect() } catch (e) { /* not connected */ }
+    bufferSource = null
+  }
+  if (loopAnalyser) {
+    try { loopAnalyser.disconnect() } catch (e) { /* not connected */ }
+    loopAnalyser = null
+  }
 }
 
 export const isLooping = () => !!bufferSource
@@ -166,6 +175,8 @@ const getClean = async (code, seconds, onNeedCapture) => {
   cleanCache = { sig, ...clean }
   return cleanCache
 }
+
+export const clearCache = () => { cleanCache = null } // drop any stale render (used by RESET)
 
 export const previewProcessed = async (state, onNeedCapture) => {
   const clean = await getClean(state.patch.code, Math.min(state.len, PREVIEW_CAP), onNeedCapture)
