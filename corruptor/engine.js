@@ -22,7 +22,10 @@ const FADE_IN_SEC = 0.004
 const FADE_OUT_SEC = 0.03
 const ONSET_THRESHOLD = 0.03
 const ONSET_WINDOW_SEC = 0.8
-const PREVIEW_MAX_SEC = 2 // corrupted preview renders at most this long → snappier tweaks (REC still uses full length)
+// corrupted preview renders the FULL length up to this cap, so what you hear
+// on PLAY is exactly what REC writes; only lengths beyond the cap are truncated
+// in preview (and the UI badges that). Bigger cap = truer preview, longer wait.
+export const PREVIEW_CAP = 6
 const SCOPE_LEN = 1024
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -36,6 +39,15 @@ const loopScope = new Float32Array(SCOPE_LEN)
 // ── live strudel stream (source + RACK A) ──────────────────
 export const playLive = (code) => {
   stopLoop()
+  resumeAudio()
+  everPlayed = true
+  evaluate(code)
+}
+// restart the live stream from cycle 0 (hush resets the transport clock),
+// so every change gives a clear "it re-triggered" cue instead of drifting in
+export const restartLive = (code) => {
+  stopLoop()
+  hush()
   resumeAudio()
   everPlayed = true
   evaluate(code)
@@ -134,21 +146,27 @@ const processBuffer = (clean, state) => {
   return { L, R, sampleRate }
 }
 
-// preview: reuse the clean capture whenever only image/rackB/curve changed
-export const previewProcessed = async (state, onNeedCapture) => {
-  const seconds = Math.min(state.len, PREVIEW_MAX_SEC)
-  const sig = `${state.patch.code}#${seconds}`
+// one clean capture, cached by (code, seconds). Only a source/RACK-A change
+// (new code) or a longer window forces a recapture; image/RACK-B/curve reuse it.
+const getClean = async (code, seconds, onNeedCapture) => {
+  const sig = `${code}#${seconds}`
   if (!cleanCache || cleanCache.sig !== sig) {
     if (onNeedCapture) onNeedCapture()
-    const clean = await captureClean(state.patch.code, seconds)
+    const clean = await captureClean(code, seconds)
     cleanCache = { sig, ...clean }
   }
-  return processBuffer(cleanCache, state)
+  return cleanCache
 }
 
-// full-length render for file export (always a fresh full capture)
+export const previewProcessed = async (state, onNeedCapture) => {
+  const clean = await getClean(state.patch.code, Math.min(state.len, PREVIEW_CAP), onNeedCapture)
+  return processBuffer(clean, state)
+}
+
+// file export at full length; reuses the preview's capture when len ≤ cap,
+// so the saved WAV is bit-for-bit what the preview loop was playing
 export const renderExact = async (state) => {
-  const clean = await captureClean(state.patch.code, state.len)
+  const clean = await getClean(state.patch.code, state.len)
   return processBuffer(clean, state)
 }
 

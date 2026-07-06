@@ -8,6 +8,7 @@ import { loadImage, genImage } from './image.js'
 import { state, saveState, restoreState, resetState } from './state.js'
 import { PRESETS } from './presets.js'
 import * as engine from './engine.js'
+import { PREVIEW_CAP } from './engine.js'
 import { startViz } from './viz.js'
 
 const AUTOWIRE_MIN = 2
@@ -85,7 +86,10 @@ const syncControls = () => {
 const syncLenRole = () => {
   const role = LEN_ROLE[state.shape]
   $('[data-js-lenrole]').textContent = role.label
-  $('[data-js-lenhint]').textContent = role.hint
+  const trunc = state.len > PREVIEW_CAP
+    ? ` ◉ ПОРЧА-ПРЕВЬЮ — первые ${PREVIEW_CAP}с; REC пишет все ${state.len}с.`
+    : ''
+  $('[data-js-lenhint]').textContent = role.hint + trunc
 }
 
 const regen = () => {
@@ -137,15 +141,21 @@ const scheduleProcessed = () => {
   bounceTimer = setTimeout(runProcessed, 140)
 }
 
-// keep the running preview in sync after any param change
+let liveTimer = 0
+const scheduleLive = () => {
+  clearTimeout(liveTimer)
+  liveTimer = setTimeout(() => {
+    engine.restartLive(state.patch.code) // re-trigger from the top so the change is unmistakable
+    setStatus('LIVE · RACK A')
+  }, 130)
+}
+
+// keep the running preview in sync after any param change (both modes restart
+// from the beginning, so every tweak audibly re-triggers the loop/one-shot)
 const refreshAudio = () => {
   if (!state.playing) return
-  if (isCorrupt()) {
-    scheduleProcessed()
-  } else {
-    engine.playLive(state.patch.code) // resumes the context (else silence on loop→live)
-    setStatus('LIVE · RACK A')
-  }
+  if (isCorrupt()) scheduleProcessed()
+  else scheduleLive()
 }
 
 const play = () => {
@@ -164,6 +174,7 @@ const play = () => {
 const stop = () => {
   state.playing = false
   clearTimeout(bounceTimer)
+  clearTimeout(liveTimer)
   $('[data-js-play]').classList.remove('is-on')
   engine.stopAll()
   setStatus('READY')
