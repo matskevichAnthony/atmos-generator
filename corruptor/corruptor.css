@@ -99,6 +99,13 @@ body::before {
 }
 .crt__status { margin-left: auto; color: var(--red); animation: blink 2.2s steps(2, jump-none) infinite; }
 @keyframes blink { 50% { opacity: .5; } }
+
+/* re-render in progress: make the wait obvious instead of "nothing happens" */
+.is-rendering .crt { border-color: var(--red); box-shadow: inset 0 0 22px rgba(255,0,0,.28); }
+.is-rendering .crt__status { animation: rblink .5s steps(2, jump-none) infinite; font-weight: 700; }
+.is-rendering .lamp { animation: rblink .3s steps(2, jump-none) infinite; }
+@keyframes rblink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .is-rendering .crt__status, .is-rendering .lamp { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .crt__status { animation: none; } }
 
 .ledstrip { display: flex; gap: 3px; margin-left: auto; }

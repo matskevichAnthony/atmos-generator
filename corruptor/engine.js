@@ -22,7 +22,7 @@ const FADE_IN_SEC = 0.004
 const FADE_OUT_SEC = 0.03
 const ONSET_THRESHOLD = 0.03
 const ONSET_WINDOW_SEC = 0.8
-const PREVIEW_MAX_SEC = 3
+const PREVIEW_MAX_SEC = 2 // corrupted preview renders at most this long → snappier tweaks (REC still uses full length)
 const SCOPE_LEN = 1024
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 

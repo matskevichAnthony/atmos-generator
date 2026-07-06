@@ -16,6 +16,13 @@ const AUTOWIRE_MAX = 6
 const $ = (sel) => document.querySelector(sel)
 const setStatus = (text) => { $('[data-js-status]').textContent = text }
 
+// LENGTH means something different per source shape
+const LEN_ROLE = {
+  shot: { label: 'ДЛИТЕЛЬНОСТЬ УДАРА', hint: 'SHOT: длина = насколько долго тянется сам удар (0.4 — щелчок, 4 — наплыв).' },
+  loop: { label: 'ПЕРИОД ПЕТЛИ', hint: 'LOOP: длина = сколько секунд в одном проходе петли, прежде чем она повторится.' },
+  drone: { label: 'НАПЛЫВ + ХВОСТ', hint: 'DRONE: длина = как долго нарастает и держится тон, прежде чем перезапустится.' },
+}
+
 // ── patch assembly + displays ──────────────────────────────
 const postSummary = () => {
   let out = ''
@@ -75,11 +82,18 @@ const syncControls = () => {
   $('[data-js-imgdrop]').classList.toggle('has-img', !!state.image.data)
 }
 
+const syncLenRole = () => {
+  const role = LEN_ROLE[state.shape]
+  $('[data-js-lenrole]').textContent = role.label
+  $('[data-js-lenhint]').textContent = role.hint
+}
+
 const regen = () => {
   state.patch = buildPatch(state.seed, state, state.modules)
   $('[data-js-seed]').value = state.seed
   $('[data-js-code]').textContent = state.patch.code + postSummary()
   renderSource()
+  syncLenRole()
   syncRack()
   saveState()
   refreshAudio()
@@ -102,13 +116,19 @@ const runProcessed = async () => {
   try {
     do {
       bounceQueued = false
-      const buf = await engine.previewProcessed(state, () => setStatus('BOUNCING SOURCE…'))
+      // onNeedCapture fires only on a real re-render (source/RACK A change);
+      // image/RACK B/curve tweaks reuse the cache and skip this entirely
+      const buf = await engine.previewProcessed(state, () => {
+        document.body.classList.add('is-rendering')
+        setStatus('◉ RE-RENDER…')
+      })
       if (!state.playing || !isCorrupt()) return
       engine.playLoop(buf.L, buf.R, buf.sampleRate)
       setStatus('LIVE · CORRUPTED')
     } while (bounceQueued)
   } finally {
     bouncing = false
+    document.body.classList.remove('is-rendering')
   }
 }
 
