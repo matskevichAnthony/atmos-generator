@@ -1,0 +1,100 @@
+<meta charset="utf-8">
+<title>Industrial Techno — Strudel</title>
+<script src="/shared/capture.js"></script>
+<style>
+  body { margin: 0; background: #0b0b0d; color: #d7d7db; font: 15px/1.5 system-ui, sans-serif; }
+  header { padding: 18px 22px; border-bottom: 1px solid #222; }
+  h1 { margin: 0 0 4px; font-size: 18px; letter-spacing: .04em; }
+  header p { margin: 0; color: #888; }
+  kbd { background: #1c1c22; border: 1px solid #333; border-radius: 4px; padding: 1px 6px; font: 12px monospace; }
+  strudel-editor { display: block; }
+  nav { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  nav a, nav button { background: #1c1c22; color: #d7d7db; border: 1px solid #333; border-radius: 6px; padding: 6px 12px; font: 13px system-ui, sans-serif; cursor: pointer; text-decoration: none; }
+  nav a:hover, nav button:hover { border-color: #ff5a3c; }
+  nav .rectime { color: #ffb03c; font: 12px monospace; }
+</style>
+
+<header>
+  <h1>⚙ INDUSTRIAL TECHNO — live loop</h1>
+  <p>Play: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> &nbsp;·&nbsp; Stop: <kbd>Ctrl</kbd>+<kbd>.</kbd> &nbsp;·&nbsp; edit the code, replay to hear changes.</p>
+  <nav>
+    <button data-js-rec>● REC WAV</button>
+    <span class="rectime" data-js-rectime></span>
+    <span style="color:#555">генераторы:</span>
+    <a href="/studio/"><b>Studio</b></a>
+    <a href="/corruptor/"><b>DC-77 Corruptor</b></a>
+    <a href="/kick/">Kick</a>
+    <a href="/rumble/">Rumble Kick</a>
+    <a href="/atmos/">Atmospheres</a>
+  </nav>
+</header>
+<script>
+  addEventListener('DOMContentLoaded', () => {
+    if (!window.StrudelCapture) return
+    window.StrudelCapture.attach(document.querySelector('[data-js-rec]'), {
+      name: 'loop',
+      timeEl: document.querySelector('[data-js-rectime]'),
+    })
+  })
+</script>
+
+<!-- The pattern lives inside this HTML comment; the editor reads it as its starting code. -->
+<strudel-editor>
+<!--
+// ═══════════════════════════════════════════════════════════
+//  INDUSTRIAL TECHNO — built layer by layer
+//  Learn by muting: put "//" in front of any line to silence
+//  that layer, replay, and hear what it was doing.
+// ═══════════════════════════════════════════════════════════
+
+setcpm(138/4)   // tempo. cpm = cycles/min; 1 cycle = 1 bar (4 beats) -> ~138 BPM
+
+stack(
+
+  // ── 1) KICK · four-on-the-floor · the heartbeat ──────────────
+  // "bd*4" = kick drum, 4 evenly-spaced hits per bar.
+  // distort + gain = the hard, saturated thump techno lives on.
+  s("bd*4").bank("RolandTR909")
+    .distort("1.6")
+    .gain(1.1),
+
+  // ── 2) SUB RUMBLE · low bass under the kick · the weight ─────
+  // 8 short low notes rolling beneath everything.
+  // lpf(90) throws away all highs -> you feel it more than hear it.
+  note("c1*8").s("sawtooth")
+    .lpf(90)
+    .attack(0).decay(0.11).sustain(0)   // pluck: quick in, quick out
+    .gain(0.75),
+
+  // ── 3) OFFBEAT HATS · the "tss" between kicks · momentum ─────
+  // "hh*8" = 8 hats. The gain pattern makes every 2nd one louder,
+  // which is what gives techno its forward-leaning push.
+  s("hh*8").bank("RolandTR909")
+    .gain("[.32 .7]*4"),
+
+  // ── 4) CLAP · backbeat on 2 & 4 · the "answer" ──────────────
+  // "~ cp ~ cp": ~ is a rest. Claps land on beats 2 and 4.
+  s("~ cp ~ cp").bank("RolandTR909")
+    .room(0.35)
+    .gain(0.85),
+
+  // ── 5) METAL CLANK · the "industrial" character · machinery ──
+  // Each hit is re-pitched by speed -> sounds like clanging metal.
+  // If you hear nothing, swap "metal" for "east" or "hh27".
+  s("metal*4")
+    .speed("1 2 0.5 1.5")
+    .crush(6)                 // bit-crush = harsh, digital grit
+    .gain(0.5).room(0.4),
+
+  // ── 6) NOISE SWEEP · atmosphere · tension over 4 bars ───────
+  // A filter slowly opening/closing across noise = the classic
+  // rising/falling techno "wind". slow(4) = one sweep per 4 bars.
+  s("white*2")
+    .lpf(sine.range(300, 5000).slow(4))
+    .gain(0.22)
+
+)
+-->
+</strudel-editor>
+
+<script type="module" src="./node_modules/@strudel/repl/dist/index.js"></script>

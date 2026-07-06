@@ -1,0 +1,62 @@
+<meta charset="utf-8">
+<title>Industrial Studio — Strudel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./studio.css">
+<script src="/shared/capture.js"></script>
+
+<main data-js-studio>
+  <div class="hazard"></div>
+
+  <header class="head">
+    <div class="head__title">
+      <h1>INDUSTRIAL<span>STUDIO</span></h1>
+    </div>
+    <div class="transport">
+      <span class="led" data-js-led></span>
+      <button class="btn btn--play" data-js-play>▶ PLAY</button>
+      <button class="btn" data-js-stop>■ STOP</button>
+      <button class="btn" data-js-rndall>🎲 ALL</button>
+    </div>
+  </header>
+
+  <section class="globalbar">
+    <label class="g">
+      <span>BPM <output data-js-bpm-out></output></span>
+      <input type="range" data-js-bpm min="120" max="170" step="1" value="136">
+    </label>
+    <label class="g">
+      <span>Тональность</span>
+      <select data-js-root></select>
+    </label>
+    <span class="g g--styles">
+      <span>Стиль</span>
+      <button class="btn btn--ghost" data-style="berlin">Berlin</button>
+      <button class="btn btn--ghost" data-style="warehouse">Warehouse</button>
+      <button class="btn btn--ghost" data-style="rotterdam">Rotterdam</button>
+      <button class="btn btn--ghost" data-style="hypno">Hypno</button>
+    </span>
+    <span class="g g--export">
+      <select data-js-bars title="длина записи в тактах">
+        <option value="4">4 такта</option>
+        <option value="8" selected>8 тактов</option>
+        <option value="16">16 тактов</option>
+      </select>
+      <button class="btn btn--rec" data-js-recmix>● MIX WAV</button>
+      <button class="btn btn--rec" data-js-stems>⬇ СТЕМЫ WAV</button>
+    </span>
+  </section>
+
+  <section class="master">
+    <div class="master__meter"><i data-js-master></i></div>
+    <canvas data-js-scope width="900" height="56"></canvas>
+  </section>
+
+  <div class="cards" data-js-layers></div>
+
+  <details class="code">
+    <summary>Strudel-код трека <button class="chip" data-js-copy>⧉ копировать</button></summary>
+    <pre data-js-fullcode>—</pre>
+  </details>
+</main>
+
+<script type="module" src="./studio.js"></script>

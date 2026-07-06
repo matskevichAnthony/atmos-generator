@@ -1,0 +1,125 @@
+<meta charset="utf-8">
+<title>Kick Designer — Strudel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./kick.css">
+<script src="/shared/capture.js"></script>
+
+<main data-js-kick>
+  <header class="head">
+    <h1>⚙ KICK DESIGNER</h1>
+    <p>Синтезируй свой кик на движке Strudel. Крути ползунки — слушай вживую — копируй код в трек.</p>
+    <div class="transport">
+      <button class="btn btn--play" data-js-play>▶ Играть</button>
+      <button class="btn" data-js-stop>■ Стоп</button>
+      <button class="btn" data-js-random>🎲 Рандом</button>
+      <button class="btn" data-js-rec>● REC WAV</button>
+      <span class="rectime" data-js-rectime></span>
+      <span class="presets">
+        <button class="btn btn--ghost" data-js-preset="techno">Techno</button>
+        <button class="btn btn--ghost" data-js-preset="gabber">Gabber</button>
+        <button class="btn btn--ghost" data-js-preset="rumble">Rumble</button>
+      </span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Высота (питч)</h2>
+      <label class="ctl">
+        <span>Нота <output data-out="pitch"></output></span>
+        <input type="range" data-param="pitch" min="24" max="48" step="1" value="33">
+      </label>
+      <label class="ctl">
+        <span>Питч-огибающая <output data-out="penv"></output> пт</span>
+        <input type="range" data-param="penv" min="0" max="48" step="1" value="28">
+      </label>
+      <label class="ctl">
+        <span>Спад питча <output data-out="pdec"></output> с</span>
+        <input type="range" data-param="pdec" min="0.01" max="0.8" step="0.01" value="0.18">
+      </label>
+      <label class="ctl">
+        <span>Форма спада</span>
+        <select data-param="pcurve">
+          <option value="1">экспонента (панч)</option>
+          <option value="0">линейно</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2>Огибающая громкости</h2>
+      <label class="ctl">
+        <span>Атака <output data-out="attack"></output> с</span>
+        <input type="range" data-param="attack" min="0" max="0.05" step="0.001" value="0.001">
+      </label>
+      <label class="ctl">
+        <span>Спад (тело) <output data-out="decay"></output> с</span>
+        <input type="range" data-param="decay" min="0.02" max="0.8" step="0.01" value="0.18">
+      </label>
+      <label class="ctl">
+        <span>Хвост <output data-out="release"></output> с</span>
+        <input type="range" data-param="release" min="0" max="1" step="0.01" value="0.1">
+      </label>
+      <label class="ctl">
+        <span>Волна</span>
+        <select data-param="wave">
+          <option value="sine">sine (чистый бум)</option>
+          <option value="triangle">triangle</option>
+          <option value="sawtooth">sawtooth (богатый)</option>
+          <option value="square">square</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2>Характер (грязь)</h2>
+      <label class="ctl">
+        <span>Дисторшн <output data-out="distort"></output></span>
+        <input type="range" data-param="distort" min="0" max="4" step="0.1" value="1.2">
+      </label>
+      <label class="ctl">
+        <span>Бит-краш <output data-out="crush"></output> <em>(16 = выкл)</em></span>
+        <input type="range" data-param="crush" min="1" max="16" step="1" value="16">
+      </label>
+      <label class="ctl">
+        <span>Coarse <output data-out="coarse"></output> <em>(1 = выкл)</em></span>
+        <input type="range" data-param="coarse" min="1" max="16" step="1" value="1">
+      </label>
+      <label class="ctl ctl--check">
+        <input type="checkbox" data-param="click">
+        <span>Клик-транзиент (атака сверху)</span>
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2>Фильтр и выход</h2>
+      <label class="ctl">
+        <span>HPF <output data-out="hpf"></output> Гц <em>(20 = выкл)</em></span>
+        <input type="range" data-param="hpf" min="20" max="500" step="5" value="25">
+      </label>
+      <label class="ctl">
+        <span>LPF <output data-out="lpf"></output> Гц <em>(18000 = выкл)</em></span>
+        <input type="range" data-param="lpf" min="80" max="18000" step="20" value="18000">
+      </label>
+      <label class="ctl">
+        <span>Громкость <output data-out="gain"></output></span>
+        <input type="range" data-param="gain" min="0" max="1.5" step="0.05" value="1">
+      </label>
+      <label class="ctl">
+        <span>Темп <output data-out="tempo"></output> BPM</span>
+        <input type="range" data-param="tempo" min="120" max="180" step="1" value="150">
+      </label>
+    </section>
+  </div>
+
+  <section class="code">
+    <div class="code__bar">
+      <h2>Strudel-код</h2>
+      <button class="btn btn--ghost" data-js-copy>⧉ Копировать</button>
+    </div>
+    <pre data-js-code>—</pre>
+    <p class="hint">Вставь этот код в свой трек (<a href="/">главный REPL</a>) — звучит так же.</p>
+  </section>
+</main>
+
+<script type="module" src="./kick.js"></script>

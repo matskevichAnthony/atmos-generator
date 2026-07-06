@@ -1,0 +1,17 @@
+{
+  "name": "industrial-strudel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@strudel/repl": "^1.3.0",
+    "@strudel/web": "^1.3.0"
+  }
+}

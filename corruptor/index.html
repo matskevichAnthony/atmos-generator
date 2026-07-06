@@ -1,0 +1,143 @@
+<meta charset="utf-8">
+<title>DC-77 DATA CORRUPTOR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./corruptor.css">
+<script src="/shared/capture.js"></script>
+
+<main class="unit">
+  <span class="screw screw--tl"></span><span class="screw screw--tr"></span>
+  <span class="screw screw--bl"></span><span class="screw screw--br"></span>
+
+  <header class="plate">
+    <div class="plate__brand">
+      <b>DC·77</b>
+      <span>DATA CORRUPTOR MK·II</span>
+    </div>
+    <div class="plate__meta">
+      <span class="plate__serial">SN 0077-3491-C</span>
+      <span class="lamp" data-js-lamp></span>
+    </div>
+  </header>
+
+  <section class="crt">
+    <canvas data-js-scope width="880" height="90"></canvas>
+    <div class="crt__row">
+      <label class="crt__field">SEED
+        <input class="crt__input" data-js-seed maxlength="8" spellcheck="false">
+      </label>
+      <span class="crt__status" data-js-status>BOOT</span>
+    </div>
+    <div class="crt__row">
+      <span class="crt__field">SRC <b data-js-srcinfo>—</b></span>
+      <span class="ledstrip" data-js-ledstrip></span>
+    </div>
+  </section>
+
+  <div class="deck">
+    <section class="module">
+      <h2>SOURCE</h2>
+      <div class="btnrow">
+        <button class="key key--tall" data-shape="shot"><b>SHOT</b><i>удар · затухает</i></button>
+        <button class="key key--tall is-on" data-shape="loop"><b>LOOP</b><i>ритм-петля</i></button>
+        <button class="key key--tall" data-shape="drone"><b>DRONE</b><i>тянущийся тон</i></button>
+      </div>
+      <h2>REGISTER</h2>
+      <div class="btnrow">
+        <button class="key is-on" data-zone="any">ANY</button>
+        <button class="key" data-zone="low">LOW</button>
+        <button class="key" data-zone="mid">MID</button>
+        <button class="key" data-zone="high">HIGH</button>
+      </div>
+      <h2>NOTES</h2>
+      <div class="btnrow btnrow--wrap">
+        <button class="key is-on" data-notes="auto">AUTO</button>
+        <button class="key" data-notes="1">1</button>
+        <button class="key" data-notes="2">2</button>
+        <button class="key" data-notes="3">3</button>
+        <button class="key" data-notes="5">5</button>
+        <button class="key" data-notes="8">8</button>
+        <button class="key key--dice" data-js-rndnotes title="перебросить порядок и высоту нот (ритм не трогает)">⌁ NOTES</button>
+      </div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="key key--rnd" data-js-rnd>RND SOURCE</button>
+        <button class="key key--rnd" data-js-autowire>AUTO WIRE</button>
+      </div>
+    </section>
+
+    <section class="module">
+      <h2>LENGTH · SEC</h2>
+      <input type="number" class="numfield" data-js-len min="0.2" max="120" step="0.1" value="2">
+      <div class="btnrow btnrow--wrap">
+        <button class="key" data-len="0.5">0.5</button>
+        <button class="key" data-len="1">1</button>
+        <button class="key" data-len="2">2</button>
+        <button class="key" data-len="4">4</button>
+        <button class="key" data-len="8">8</button>
+        <button class="key" data-len="16">16</button>
+        <button class="key" data-len="32">32</button>
+      </div>
+      <h2>TRANSPORT</h2>
+      <div class="btnrow">
+        <button class="key key--wide" data-js-play>PLAY</button>
+        <button class="key" data-js-stop>STOP</button>
+        <button class="key key--rec" data-js-rec>REC WAV</button>
+      </div>
+      <p class="note">PLAY звучит вживую. Включаешь IMAGE или любой модуль RACK B — превью на лету становится битым (offline-рендер под капотом).</p>
+    </section>
+
+    <section class="module">
+      <h2>IMAGE UNIT</h2>
+      <div class="imgdrop" data-js-imgdrop title="брось картинку или кликни">
+        <canvas data-js-imgthumb width="72" height="72"></canvas>
+        <span class="imgdrop__hint">DROP<br>IMAGE</span>
+      </div>
+      <input type="file" data-js-imgfile accept="image/*" hidden>
+      <div class="btnrow">
+        <button class="key key--rnd" data-js-imggen>GEN IMG</button>
+      </div>
+      <div class="btnrow">
+        <button class="key is-on" data-imgmode="off">OFF</button>
+        <button class="key" data-imgmode="spectrum">SPECTR</button>
+        <button class="key" data-imgmode="carve">CARVE</button>
+        <button class="key" data-imgmode="bend">BEND</button>
+      </div>
+      <h2>MIX <output data-js-imgamtout>70</output></h2>
+      <input type="range" class="fader" data-js-imgamt min="0" max="100" step="1" value="70">
+      <p class="note">SPECTR — картинка звучит как спектрограмма · CARVE — выжигается в спектр звука · BEND — байты файла как PCM. Слышно на лету во время PLAY.</p>
+    </section>
+
+    <section class="module">
+      <h2>EXT SAMPLE BANK</h2>
+      <input class="numfield numfield--text" data-js-bankurl placeholder="github:tidalcycles/dirt-samples" spellcheck="false">
+      <input class="numfield numfield--text" data-js-banknames placeholder="bd, metal, industrial, glitch" spellcheck="false">
+      <div class="btnrow">
+        <button class="key" data-js-loadbank>LOAD</button>
+      </div>
+      <p class="note">OPTIONAL. LOADED NAMES ENTER THE SOURCE POOL AND UNLOCK THE WARP MODULE.</p>
+    </section>
+  </div>
+
+  <section class="rackzone">
+    <h2 class="rackzone__title">RACK A · LIVE — ВКЛЮЧАЙ И СЛУШАЙ РАЗНИЦУ (PLAY)</h2>
+    <div class="rack" data-js-rack></div>
+  </section>
+
+  <section class="rackzone">
+    <h2 class="rackzone__title">RACK B · COLLAPSE ENGINE — ПОРЧА ДАННЫХ · СЛЫШНО НА ЛЕТУ ВО ВРЕМЯ PLAY</h2>
+    <div class="curverow">
+      <span class="curverow__label">CURVE</span>
+      <button class="key" data-curve="flat">FLAT</button>
+      <button class="key is-on" data-curve="collapse">COLLAPSE</button>
+      <button class="key" data-curve="heal">HEAL</button>
+      <span class="note">FLAT — порча равномерно · COLLAPSE — звук рушится к концу · HEAL — начинается сломанным и чинится</span>
+    </div>
+    <div class="rack" data-js-postrack></div>
+  </section>
+
+  <section class="term">
+    <div class="term__bar">PATCH DUMP <button class="key key--mini" data-js-copy>COPY</button></div>
+    <pre data-js-code>—</pre>
+  </section>
+</main>
+
+<script type="module" src="./corruptor.js"></script>

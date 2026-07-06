@@ -1,0 +1,160 @@
+<meta charset="utf-8">
+<title>Trippy Atmospheres — Strudel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./atmos.css">
+<script src="/shared/capture.js"></script>
+
+<div class="aura"></div>
+<main data-js-atmos>
+  <header class="head">
+    <div class="head__title">
+      <h1>ATMO<span>·</span>DRONE</h1>
+      <p>Долгие триповые атмосферы: аккорд-дрон + медленная эволюция фильтра, вибрато, фейзера и эха.</p>
+    </div>
+    <div class="transport">
+      <span class="led" data-js-led></span>
+      <button class="btn btn--play" data-js-play>▶ PLAY</button>
+      <button class="btn" data-js-stop>■ STOP</button>
+      <button class="btn" data-js-random>🎲 RND</button>
+      <button class="btn" data-js-copy>⧉ COPY</button>
+      <button class="btn" data-js-rec>● REC WAV</button>
+      <span class="rectime" data-js-rectime></span>
+    </div>
+  </header>
+
+  <section class="presets">
+    <div class="presets__row" data-js-presets>
+      <button class="btn btn--ghost" data-preset="deepspace">Deep Space</button>
+      <button class="btn btn--ghost" data-preset="cathedral">Cathedral</button>
+      <button class="btn btn--ghost" data-preset="acidfog">Acid Fog</button>
+      <button class="btn btn--ghost" data-preset="voiddrone">Void Drone</button>
+      <button class="btn btn--ghost" data-preset="shimmer">Shimmer</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel">
+      <h2 class="h-tone">◈ Тон</h2>
+      <label class="ctl">
+        <span>Корень <output data-out="root"></output></span>
+        <input type="range" data-param="root" min="24" max="52" step="1" value="38">
+      </label>
+      <label class="ctl">
+        <span>Аккорд</span>
+        <select data-param="chord">
+          <option value="drone">Drone (одна нота)</option>
+          <option value="fifth">Fifth (квинта)</option>
+          <option value="minor" selected>Minor</option>
+          <option value="minor7">Minor 7</option>
+          <option value="sus2">Sus2</option>
+          <option value="dim">Dim (тревожный)</option>
+        </select>
+      </label>
+      <label class="ctl">
+        <span>Волна</span>
+        <select data-param="wave">
+          <option value="supersaw" selected>supersaw (густой)</option>
+          <option value="sawtooth">sawtooth</option>
+          <option value="square">square</option>
+          <option value="triangle">triangle</option>
+          <option value="sine">sine</option>
+        </select>
+      </label>
+      <label class="ctl">
+        <span>Расстройка (толщина) <output data-out="det"></output></span>
+        <input type="range" data-param="det" min="0" max="0.5" step="0.01" value="0.15">
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2 class="h-move">≈ Движение</h2>
+      <label class="ctl">
+        <span>Фильтр — центр <output data-out="fcenter"></output> Гц</span>
+        <input type="range" data-param="fcenter" min="120" max="4000" step="20" value="700">
+      </label>
+      <label class="ctl">
+        <span>Фильтр — глубина <output data-out="fdepth"></output> Гц</span>
+        <input type="range" data-param="fdepth" min="0" max="2000" step="20" value="500">
+      </label>
+      <label class="ctl">
+        <span>Фильтр — скорость <output data-out="fspeed"></output> циклов</span>
+        <input type="range" data-param="fspeed" min="1" max="32" step="1" value="16">
+      </label>
+      <label class="ctl">
+        <span>Резонанс <output data-out="res"></output></span>
+        <input type="range" data-param="res" min="0" max="25" step="1" value="8">
+      </label>
+      <label class="ctl">
+        <span>Вибрато — глубина <output data-out="vibdep"></output> пт</span>
+        <input type="range" data-param="vibdep" min="0" max="1" step="0.02" value="0.1">
+      </label>
+      <label class="ctl">
+        <span>Вибрато — скорость <output data-out="vibrate"></output> Гц</span>
+        <input type="range" data-param="vibrate" min="0.05" max="6" step="0.05" value="0.3">
+      </label>
+      <label class="ctl">
+        <span>Фейзер <output data-out="phz"></output></span>
+        <input type="range" data-param="phz" min="0" max="1" step="0.05" value="0.4">
+      </label>
+      <label class="ctl">
+        <span>Фейзер — скорость <output data-out="phzrate"></output></span>
+        <input type="range" data-param="phzrate" min="0.02" max="1" step="0.02" value="0.1">
+      </label>
+      <label class="ctl">
+        <span>Дрейф панорамы <output data-out="panspeed"></output> циклов</span>
+        <input type="range" data-param="panspeed" min="2" max="32" step="1" value="12">
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2 class="h-space">✷ Пространство</h2>
+      <label class="ctl">
+        <span>Реверб <output data-out="room"></output></span>
+        <input type="range" data-param="room" min="0" max="4" step="0.1" value="2">
+      </label>
+      <label class="ctl">
+        <span>Размер комнаты <output data-out="rsize"></output></span>
+        <input type="range" data-param="rsize" min="1" max="14" step="0.5" value="8">
+      </label>
+      <label class="ctl">
+        <span>Эхо <output data-out="dly"></output></span>
+        <input type="range" data-param="dly" min="0" max="1" step="0.05" value="0.5">
+      </label>
+      <label class="ctl">
+        <span>Эхо — время <output data-out="dtime"></output> с</span>
+        <input type="range" data-param="dtime" min="0.05" max="1" step="0.01" value="0.38">
+      </label>
+      <label class="ctl">
+        <span>Эхо — фидбэк <output data-out="dfb"></output></span>
+        <input type="range" data-param="dfb" min="0" max="0.9" step="0.05" value="0.55">
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2 class="h-time">◷ Форма и время</h2>
+      <label class="ctl">
+        <span>Атака (наплыв) <output data-out="att"></output> с</span>
+        <input type="range" data-param="att" min="0" max="10" step="0.1" value="4">
+      </label>
+      <label class="ctl">
+        <span>Хвост (наложение) <output data-out="rel"></output> с</span>
+        <input type="range" data-param="rel" min="0.5" max="12" step="0.1" value="6">
+      </label>
+      <label class="ctl">
+        <span>Темп (длина нот) <output data-out="tempo"></output> BPM</span>
+        <input type="range" data-param="tempo" min="30" max="120" step="1" value="52">
+      </label>
+      <label class="ctl">
+        <span>Громкость <output data-out="gain"></output></span>
+        <input type="range" data-param="gain" min="0" max="1" step="0.05" value="0.7">
+      </label>
+    </section>
+  </div>
+
+  <section class="code">
+    <div class="code__bar"><h2>Strudel</h2><span class="code__hint">вставь в <a href="/">главный REPL</a></span></div>
+    <pre data-js-code>—</pre>
+  </section>
+</main>
+
+<script type="module" src="./atmos.js"></script>
