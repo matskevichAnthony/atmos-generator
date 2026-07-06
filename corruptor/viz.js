@@ -8,6 +8,7 @@
 import { state } from './state.js'
 import { fft } from './dsp.js'
 import * as engine from './engine.js'
+import { vizFor } from './viz-patterns.js'
 
 const CELL = 22
 const FFT_N = 1024
@@ -55,13 +56,18 @@ const resize = () => {
   if (cols.length !== c) cols = new Float32Array(c)
 }
 
-const drawBg = (spec) => {
+// awake = a session is playing; spec present = audio this frame.
+// The dead-flicker is ONLY for a stopped machine. While playing, a momentary
+// silence (the hush→capture gap of every bounce, or a hot-swap) just decays the
+// field — so switching modes/effects no longer strobes the whole page.
+const drawBg = (spec, awake) => {
   const w = bg.width, h = bg.height
   bgx.clearRect(0, 0, w, h)
   const C = cols.length
   const R = Math.ceil(h / CELL)
 
-  if (!spec) { // almost dead: sparse dim flicker
+  if (!awake) { // stopped: almost dead
+    for (let c = 0; c < C; c++) cols[c] *= 0.7
     bgx.fillStyle = '#161616'
     for (let i = 0; i < 26; i++) {
       const c = (i * 53 + (frame >> 5) * 17) % C
@@ -71,13 +77,17 @@ const drawBg = (spec) => {
     return
   }
 
-  let b = 0
-  for (let k = 2; k < 9; k++) if (mags[k] > b) b = mags[k]
-  bass = Math.max(Math.min(1, b / 90), bass * 0.9)
-
-  for (let c = 0; c < C; c++) {
-    const target = bandEnergy(spec, c, C)
-    cols[c] = target > cols[c] ? target : cols[c] * 0.86
+  if (spec) {
+    let b = 0
+    for (let k = 2; k < 9; k++) if (mags[k] > b) b = mags[k]
+    bass = Math.max(Math.min(1, b / 90), bass * 0.9)
+    for (let c = 0; c < C; c++) {
+      const target = bandEnergy(spec, c, C)
+      cols[c] += (target - cols[c]) * (target > cols[c] ? 0.45 : 0.14) // smoothed attack, no slam
+    }
+  } else { // playing but silent for a frame or two: fade, don't die
+    bass *= 0.9
+    for (let c = 0; c < C; c++) cols[c] *= 0.92
   }
   // energy bleeds sideways: glow spreads across the field
   for (let c = 1; c < C - 1; c++) {
@@ -159,27 +169,28 @@ const drawMods = () => {
     ctx.fillStyle = '#000'
     ctx.fillRect(0, 0, w, h)
 
+    const cw = w / MOD_GRID.c, ch = h / MOD_GRID.r
+    if (!on) { // dormant: a few dead pixels
+      ctx.fillStyle = '#1c1c1c'
+      for (let c = 0; c < MOD_GRID.c; c++) for (let r = 0; r < MOD_GRID.r; r++)
+        if ((c * 13 + r * 7 + idx) % 41 === 0) ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2)
+      return
+    }
+
     let ph = phases.get(id) ?? idx * 3.7
-    if (on && state.playing) ph += 0.06 + (st.amt / 100) * 0.16 // awake
+    if (state.playing) ph += 0.06 + (st.amt / 100) * 0.16 // awake only while playing
     phases.set(id, ph)
 
-    const cw = w / MOD_GRID.c, ch = h / MOD_GRID.r
-    const amt = st.amt / 100
-    for (let r = 0; r < MOD_GRID.r; r++) {
-      for (let c = 0; c < MOD_GRID.c; c++) {
-        const v = Math.sin(c * 0.52 + ph + idx * 2.13) * Math.sin(r * 0.94 - ph * 0.6 + idx * 1.31)
-          + Math.sin((c + r) * 0.31 + ph * 0.4)
-        if (!on) { // dormant: few dead pixels
-          if ((c * 13 + r * 7 + idx) % 41 === 0) { ctx.fillStyle = '#1c1c1c'; ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2) }
-          continue
-        }
-        if (v > 1.5 - amt * 1.4) {
-          const red = (c * 5 + r * 11 + Math.floor(ph)) % 19 === 0
-          ctx.fillStyle = red ? 'rgba(255,0,0,.8)' : 'rgba(255,255,255,.42)'
-          ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2)
-        }
-      }
+    const g = {
+      C: MOD_GRID.c,
+      R: MOD_GRID.r,
+      cell: (c, r, color) => {
+        if (c < 0 || c >= MOD_GRID.c || r < 0 || r >= MOD_GRID.r) return
+        ctx.fillStyle = color
+        ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2)
+      },
     }
+    vizFor(id)(g, ph, st.amt / 100)
   })
 }
 
@@ -187,7 +198,7 @@ const drawMods = () => {
 const loop = () => {
   frame++
   const spec = computeSpectrum()
-  if (frame % 2 === 0) drawBg(state.playing ? spec : null)
+  if (frame % 2 === 0) drawBg(spec, state.playing)
   drawCrt(spec)
   if (frame % 3 === 0) drawMods()
   requestAnimationFrame(loop)
