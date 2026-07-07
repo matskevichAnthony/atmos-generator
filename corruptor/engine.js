@@ -5,7 +5,7 @@
 // IMAGE / RACK B / CURVE tweaks re-run as pure JS on that cache — instant,
 // silent, no second flow. Only a source/RACK-A change forces a recapture.
 
-import { initStrudel, evaluate, hush, samples, getAudioContext, getAudioContextCurrentTime } from '/node_modules/@strudel/web/dist/index.mjs'
+import { initStrudel, evaluate, hush, getAudioContext, getAudioContextCurrentTime } from '/node_modules/@strudel/web/dist/index.mjs'
 import { applyImage } from './image.js'
 import { runPost } from './dsp.js'
 
@@ -53,7 +53,6 @@ export const restartLive = (code) => {
   evaluate(code)
 }
 export const stopAll = () => { stopLoop(); hush() }
-export const loadSampleBank = (url) => samples(url)
 
 // ── rendered-buffer loop (the corrupted result) ────────────
 export const playLoop = (L, R, sampleRate) => {

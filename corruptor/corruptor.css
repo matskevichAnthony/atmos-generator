@@ -253,11 +253,11 @@ h2 {
 /* ── image unit ── */
 .imgdrop {
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  height: 88px; margin-bottom: 8px; background: #000;
-  border: 1px dashed var(--muted); cursor: pointer;
+  height: 168px; margin-bottom: 8px; background: #000; overflow: hidden;
+  border: 1px dashed var(--muted); cursor: pointer; position: relative;
 }
 .imgdrop:hover, .imgdrop.is-over { border-color: var(--red); }
-.imgdrop canvas { width: 72px; height: 72px; display: none; border: 1px solid var(--dim); image-rendering: pixelated; filter: grayscale(1) contrast(1.2); }
+.imgdrop canvas { width: 100%; height: 100%; display: none; image-rendering: pixelated; filter: grayscale(1) contrast(1.25); }
 .imgdrop.has-img canvas { display: block; }
 .imgdrop.has-img .imgdrop__hint { display: none; }
 .imgdrop__hint { font-family: var(--pixel); color: var(--muted); font-size: 15px; letter-spacing: .2em; text-align: center; line-height: 1.5; }

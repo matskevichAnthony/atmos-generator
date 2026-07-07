@@ -16,7 +16,6 @@ export const state = {
   len: 2,
   bpm: 138,
   bars: null, // when set, len is quantized to this many bars at bpm
-  banks: [],
   playing: false,
   patch: null,
   curve: 'collapse',

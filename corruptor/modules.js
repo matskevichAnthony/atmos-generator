@@ -122,31 +122,18 @@ export const MODULES = [
       return { frag: `.pan(rand.range(0,1).fast(${rate}))`, note: `×${rate}/цикл` }
     },
   },
-  {
-    id: 'warp', name: 'WARP', desc: 'гнёт скорость', stage: 0, sampleOnly: true,
-    gen: (t, a) => {
-      const pat = a < 0.4 ? t.pick(['.5', '2', '1 2']) : t.pick(['1 -1', '<1 2 .5 -1>', '<-1 .5>*2', '<.25 4 -2>'])
-      let frag = `.speed("${pat}")`, note = pat
-      if (a > 0.5) { frag += `.chop(${t.ri(8, 48)})`; note += ' +chop' }
-      return { frag, note }
-    },
-  },
 ]
 
 // ── assembly: source + enabled modules → strudel code ──────
 export const buildPatch = (seedHex, opts, modState) => {
-  // a sample-only module (WARP) is usable whenever a bank is loaded; force the
-  // source to a sample so it actually has something to work on
-  const bankLoaded = opts.banks.length > 0
-  const forceSample = bankLoaded && MODULES.some((m) => m.sampleOnly && modState[m.id]?.on)
-  const source = genSource(seedHex, { ...opts, forceSample })
+  const source = genSource(seedHex, opts)
   const cpm = r2((60 * source.cycles) / opts.len)
-  const ctx = { pitched: source.pitched, isSample: source.isSample, len: opts.len }
+  const ctx = { pitched: source.pitched, len: opts.len }
 
   const notes = {}
   let chain = ''
   const active = MODULES
-    .filter((m) => modState[m.id]?.on && (!m.sampleOnly || bankLoaded))
+    .filter((m) => modState[m.id]?.on)
     .sort((a, b) => a.stage - b.stage)
 
   for (const m of active) {
@@ -158,5 +145,5 @@ export const buildPatch = (seedHex, opts, modState) => {
   }
 
   const code = `setcpm(${cpm})\n${source.code} // SOURCE${chain}\n  .gain(.8)`
-  return { code, notes, pitched: source.pitched, isSample: source.isSample, source: source.meta }
+  return { code, notes, pitched: source.pitched, source: source.meta }
 }

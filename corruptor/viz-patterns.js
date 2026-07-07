@@ -124,14 +124,6 @@ export const ARCHETYPES = {
     const pos = Math.floor(noise(Math.floor(ph * 3), 0, 1) * (g.C - 4))
     for (let c = 0; c < 4; c++) for (let r = 1; r < g.R - 1; r++) g.cell(pos + c, r, c < 2 ? RED : WHITE)
   },
-  // WARP — bands stretching and compressing (speed bend)
-  stretch: (g, ph) => {
-    const k = 0.3 + (Math.sin(ph * 0.5) * 0.5 + 0.5) * 0.9
-    for (let c = 0; c < g.C; c++) {
-      const on = Math.sin(c * k + ph) > 0
-      if (on) for (let r = 0; r < g.R; r++) g.cell(c, r, (c % 6 === 0) ? RED : DIM)
-    }
-  },
   // BITROT — random single pixels flipping (bit flips)
   bitflip: (g, ph, amt) => {
     const s = Math.floor(ph * 4)
@@ -209,7 +201,7 @@ export const ARCHETYPES = {
 const MOD_VIZ = {
   chew: 'crush', rust: 'clip', starve: 'sink', mouth: 'formant', seasick: 'wobble',
   ghost: 'sweep', dive: 'fall', stutter: 'stutter', scramble: 'shift', dropout: 'holes',
-  backmask: 'mirror', howl: 'echo', drown: 'diffuse', panic: 'jump', warp: 'stretch',
+  backmask: 'mirror', howl: 'echo', drown: 'diffuse', panic: 'jump',
   bitrot: 'bitflip', skip: 'stuck', holes: 'blank', shatter: 'shuffle', freeze: 'freeze',
   decimate: 'steps', robot: 'scan', smear: 'trail',
 }

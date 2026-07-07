@@ -110,8 +110,8 @@
     <section class="module">
       <h2>IMAGE UNIT</h2>
       <div class="imgdrop" data-js-imgdrop title="брось картинку или кликни">
-        <canvas data-js-imgthumb width="72" height="72"></canvas>
-        <span class="imgdrop__hint">DROP<br>IMAGE</span>
+        <canvas data-js-imgthumb width="480" height="180"></canvas>
+        <span class="imgdrop__hint">DROP IMAGE</span>
       </div>
       <input type="file" data-js-imgfile accept="image/*" hidden>
       <div class="btnrow">
@@ -126,16 +126,6 @@
       <h2>MIX <output data-js-imgamtout>70</output></h2>
       <input type="range" class="fader" data-js-imgamt min="0" max="100" step="1" value="70">
       <p class="note">SPECTR — картинка звучит как спектрограмма · CARVE — выжигается в спектр звука · BEND — байты файла как PCM. Слышно на лету во время PLAY.</p>
-    </section>
-
-    <section class="module">
-      <h2>EXT SAMPLE BANK</h2>
-      <input class="numfield numfield--text" data-js-bankurl placeholder="github:tidalcycles/dirt-samples" spellcheck="false">
-      <input class="numfield numfield--text" data-js-banknames placeholder="bd, metal, industrial, glitch" spellcheck="false">
-      <div class="btnrow">
-        <button class="key" data-js-loadbank>LOAD</button>
-      </div>
-      <p class="note">OPTIONAL. LOADED NAMES ENTER THE SOURCE POOL AND UNLOCK THE WARP MODULE.</p>
     </section>
   </div>
 

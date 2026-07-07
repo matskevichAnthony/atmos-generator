@@ -57,13 +57,8 @@ const syncRack = () => {
   MODULES.forEach((m) => {
     const el = $(`[data-mod="${m.id}"]`)
     const st = state.modules[m.id]
-    // MUST be a real boolean — classList.toggle(cls, undefined) FLIPS instead of
-    // forcing false, which made every RACK A card strobe blocked on each change
-    const blocked = Boolean(m.sampleOnly) && !state.banks.length
-    el.classList.toggle('is-on', st.on && !blocked)
-    el.classList.toggle('is-blocked', blocked)
-    el.querySelector('[data-mod-note]').textContent =
-      blocked ? 'SMPL ONLY' : (st.on ? state.patch.notes[m.id] ?? '—' : 'OFF')
+    el.classList.toggle('is-on', st.on)
+    el.querySelector('[data-mod-note]').textContent = st.on ? state.patch.notes[m.id] ?? '—' : 'OFF'
     el.querySelector('[data-mod-amt]').value = st.amt
   })
   POST_MODULES.forEach((m) => {
@@ -233,13 +228,10 @@ const reset = () => {
   engine.clearCache()
   resetState()
   state.seed = randomSeedHex()
-  state.banks = []
   state.bpm = 138
   state.bars = null
   state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
   Object.values(state.modules).forEach((m) => { m.on = false })
-  $('[data-js-bankurl]').value = ''
-  $('[data-js-banknames]').value = ''
   $('[data-js-imgdrop]').classList.remove('has-img')
   syncControls()
   hardSwitch()
@@ -386,22 +378,6 @@ const wireImageUnit = () => {
   })
 }
 
-// ── sample banks ───────────────────────────────────────────
-const loadBanks = async () => {
-  const url = $('[data-js-bankurl]').value.trim()
-  const names = $('[data-js-banknames]').value.trim()
-  if (!url) { setStatus('NO BANK URL'); return }
-  setStatus('LOADING BANK…')
-  try {
-    await engine.loadSampleBank(url)
-    state.banks = names ? names.split(',').map((s) => s.trim()).filter(Boolean) : []
-    setStatus(state.banks.length ? `BANK OK: ${state.banks.length} NAMES` : 'BANK OK — ADD NAMES')
-    regen()
-  } catch (e) {
-    setStatus('BANK LOAD FAILED')
-  }
-}
-
 // ── wiring ─────────────────────────────────────────────────
 const init = () => {
   restoreState()
@@ -489,8 +465,6 @@ const init = () => {
       syncControls()
       regen()
     }))
-
-  $('[data-js-loadbank]').addEventListener('click', loadBanks)
 
   syncControls()
   regen()

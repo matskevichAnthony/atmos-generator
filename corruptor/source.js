@@ -32,21 +32,15 @@ export const genSource = (seedHex, opts) => {
   // pitches draw from their own stream: bumping noteNonce rerolls ONLY the notes,
   // leaving rhythm shell / voice / envelope untouched
   const tn = toolkit(seededRng(`${seedHex}:notes:${opts.noteNonce ?? 0}`))
-  const { shape, zone, len, banks } = opts
+  const { shape, zone, len } = opts
   const wantNotes = opts.notes !== 'auto' ? +opts.notes : null
 
   // explicit note count guarantees a pitched source
-  const pool = wantNotes
-    ? ['osc', 'osc', 'fm']
-    : ['osc', 'osc', 'fm', 'noise', ...(banks.length ? ['sample', 'sample'] : [])]
-  let kind = t.pick(pool)
-  if (opts.forceSample && banks.length && !wantNotes) kind = 'sample' // WARP needs a sample source
+  const pool = wantNotes ? ['osc', 'osc', 'fm'] : ['osc', 'osc', 'fm', 'noise']
+  const kind = t.pick(pool)
   const pitched = kind === 'osc' || kind === 'fm'
-  const isSample = kind === 'sample'
 
-  let ev = null
-  if (kind === 'noise') ev = t.pick(['white', 'pink', 'brown'])
-  if (isSample) ev = `${t.pick(banks)}:${t.ri(0, 15)}`
+  const ev = kind === 'noise' ? t.pick(['white', 'pink', 'brown']) : null
 
   let cycles = 1
   let code, env, midis = [], grid, hits, sequence = null
@@ -118,7 +112,7 @@ export const genSource = (seedHex, opts) => {
     }
     if (t.chance(0.25)) code += `.add(note("0,${r2(t.rf(0.05, 0.4))}"))`
   } else {
-    voice = isSample ? ev : ev.toUpperCase() + ' NOISE'
+    voice = ev.toUpperCase() + ' NOISE'
   }
 
   const meta = {
@@ -129,5 +123,5 @@ export const genSource = (seedHex, opts) => {
     grid,
     sustained: shape === 'drone',
   }
-  return { code: code + env, pitched, isSample, cycles, meta }
+  return { code: code + env, pitched, cycles, meta }
 }
