@@ -25,7 +25,7 @@ body {
   background: var(--bg);
   color: #d2d2d2;
   font: 13px/1.45 var(--mono);
-  padding: 26px 18px;
+  padding: 14px 16px;
   display: flex;
   justify-content: center;
   align-items: flex-start; /* the chassis must grow with content, not clamp to viewport */
@@ -49,7 +49,7 @@ body::before {
 
 /* ── chassis: layers float, depth compresses ── */
 .unit {
-  width: 100%; max-width: 940px;
+  width: 100%; max-width: min(1600px, 97vw);
   background: #000;
   border: 2px solid var(--fg);
   box-shadow: 6px 6px 0 var(--dim), 14px 16px 0 rgba(255,255,255,.06);
@@ -69,7 +69,7 @@ body::before {
 .plate {
   display: flex; justify-content: space-between; align-items: center;
   border: 1px solid var(--fg);
-  padding: 8px 16px; margin-bottom: 14px;
+  padding: 7px 16px; margin-bottom: 10px;
 }
 .plate__brand b { font-family: var(--pixel); font-size: 34px; letter-spacing: .06em; color: var(--fg); }
 .plate__brand span { margin-left: 12px; letter-spacing: .32em; color: var(--red); font-size: 13px; }
@@ -77,14 +77,15 @@ body::before {
 .plate__serial { font-size: 11px; letter-spacing: .12em; color: var(--muted); }
 .lamp { width: 11px; height: 11px; background: var(--red); box-shadow: 0 0 10px 1px var(--red); }
 
-/* ── CRT screen ── */
+/* ── CRT screen — sticky so the scope/seed/status stay in view while working ── */
 .crt {
+  position: sticky; top: 6px; z-index: 15;
   border: 1px solid var(--fg);
   background: #000;
-  box-shadow: inset 0 0 0 1px #000, inset 0 0 30px rgba(255,255,255,.05);
-  padding: 10px 12px; margin-bottom: 14px;
+  box-shadow: inset 0 0 0 1px #000, inset 0 0 30px rgba(255,255,255,.05), 0 6px 16px rgba(0,0,0,.9);
+  padding: 8px 12px; margin-bottom: 12px;
 }
-.crt canvas { width: 100%; height: 90px; display: block; }
+.crt canvas { width: 100%; height: 64px; display: block; }
 .crt__row {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   margin-top: 8px; padding-top: 8px;
@@ -115,7 +116,7 @@ body::before {
 
 /* ── headings ── */
 h2 {
-  margin: 12px 0 8px; font-family: var(--pixel);
+  margin: 8px 0 6px; font-family: var(--pixel);
   font-size: 15px; letter-spacing: .18em; color: var(--red); text-transform: uppercase;
 }
 .module h2:first-child { margin-top: 0; }
@@ -123,7 +124,7 @@ h2 {
 .note { font-size: 10px; letter-spacing: .04em; line-height: 1.6; color: var(--muted); margin: 10px 0 0; }
 
 /* ── presets bar ── */
-.presetbar { margin-bottom: 12px; }
+.presetbar { margin-bottom: 8px; }
 .presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .preset {
   display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
@@ -138,9 +139,9 @@ h2 {
 .preset:hover i { color: #000; }
 
 /* ── layout: panels separate, broken symmetry ── */
-.deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; align-items: start; }
 .module {
-  border: 1px solid var(--fg); background: #000; padding: 12px 14px 14px; min-width: 0;
+  border: 1px solid var(--fg); background: #000; padding: 10px 12px 12px; min-width: 0;
   position: relative;
 }
 .module:nth-child(odd) { box-shadow: 5px 5px 0 rgba(255,255,255,.09); }
@@ -204,12 +205,12 @@ h2 {
 .numfield:focus { border-color: var(--red); }
 
 /* ── rack: offset modules, damaged architecture ── */
-.rackzone { margin-top: 14px; }
+.rackzone { margin-top: 10px; }
 .rackzone__title { margin: 0 0 8px; font-family: var(--pixel); font-size: 15px; letter-spacing: .18em; color: var(--red); }
-.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; counter-reset: mod; }
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; counter-reset: mod; }
 .mod {
   position: relative; border: 1px solid var(--dim); background: #000;
-  padding: 10px 10px 8px; opacity: .58; transition: none;
+  padding: 8px 9px 6px; opacity: .58; transition: none;
   transform: translate3d(0, var(--oy, 0), 0) rotate(var(--rot, 0deg));
 }
 .mod:nth-child(3n) { --oy: 1px; }
@@ -226,7 +227,7 @@ h2 {
   font: 10px var(--mono); letter-spacing: .1em; color: #2c2c2c;
 }
 .mod__viz {
-  display: block; width: 100%; height: 36px; margin: 2px 0 6px;
+  display: block; width: 100%; height: 26px; margin: 2px 0 4px;
   background: #000; border: 1px solid #141414;
   image-rendering: pixelated;
 }
@@ -240,7 +241,7 @@ h2 {
 .mod.is-on .mod__head b { color: var(--red); }
 .mod__dice { background: #000; border: 1px solid var(--dim); color: var(--fg); font: 700 11px/1 var(--mono); padding: 1px 5px; cursor: pointer; }
 .mod__dice:hover { background: var(--fg); color: #000; }
-.mod__desc { margin: 3px 0 7px; font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.mod__desc { margin: 2px 0 4px; font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .mod__note { display: block; margin-top: 4px; font-family: var(--pixel); font-size: 13px; letter-spacing: .06em; color: var(--muted); }
 .mod.is-on .mod__note { color: var(--red); }
 
