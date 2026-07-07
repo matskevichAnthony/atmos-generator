@@ -149,8 +149,16 @@ const runProcessed = async () => {
 }
 
 const scheduleProcessed = () => {
+  engine.stopLoop() // cut the old corrupted loop NOW → clean silence during the re-render, no overlap
   clearTimeout(bounceTimer)
   bounceTimer = setTimeout(runProcessed, 140)
+}
+
+// discrete switches (preset / reroll / shape / notes / module toggle) must fully
+// kill the current sound before the new one — no lingering loop or ringing tail
+const hardSwitch = () => {
+  engine.stopAll()
+  regen()
 }
 
 let liveTimer = 0
@@ -216,7 +224,7 @@ const renderWav = async () => {
 // ── randomizers ────────────────────────────────────────────
 const reroll = () => {
   state.seed = randomSeedHex()
-  regen()
+  hardSwitch()
   flashGlitch()
   setStatus('NEW SOURCE')
 }
@@ -234,7 +242,7 @@ const reset = () => {
   $('[data-js-banknames]').value = ''
   $('[data-js-imgdrop]').classList.remove('has-img')
   syncControls()
-  regen()
+  hardSwitch()
   flashGlitch()
   setStatus('RESET ▸ CLEAN SLATE')
 }
@@ -248,7 +256,7 @@ const applyPreset = (p) => {
   Object.entries(p.a ?? {}).forEach(([id, amt]) => { if (state.modules[id]) state.modules[id] = { on: true, amt, nonce: 1 } })
   Object.entries(p.b ?? {}).forEach(([id, amt]) => { if (state.post[id]) state.post[id] = { on: true, amt, nonce: 1 } })
   syncControls()
-  regen()
+  hardSwitch()
   flashGlitch()
   setStatus(`PRESET ▸ ${p.name}`)
 }
@@ -261,7 +269,7 @@ const autowire = () => {
     st.on = chosen.has(m.id)
     if (st.on) { st.amt = 20 + Math.floor(Math.random() * 81); st.nonce++ }
   })
-  regen()
+  hardSwitch()
   flashGlitch()
   setStatus(`WIRED ${count} MODULES`)
 }
@@ -304,8 +312,8 @@ const wireRack = (container, stateMap, attr) => {
     const card = e.target.closest(`[${attr}]`)
     if (!card) return
     const st = stateMap[card.getAttribute(attr)]
-    if (e.target.closest('[data-mod-power]')) { st.on = !st.on; regen() }
-    if (e.target.closest('[data-mod-dice]')) { st.nonce++; if (!st.on) st.on = true; regen() }
+    if (e.target.closest('[data-mod-power]')) { st.on = !st.on; hardSwitch() } // toggling a module = a switch → clean cut
+    if (e.target.closest('[data-mod-dice]')) { st.nonce++; if (!st.on) st.on = true; hardSwitch() }
   })
   container.addEventListener('input', (e) => {
     const card = e.target.closest(`[${attr}]`)
@@ -431,27 +439,27 @@ const init = () => {
     b.addEventListener('click', () => {
       state.shape = b.dataset.shape
       document.querySelectorAll('[data-shape]').forEach((x) => x.classList.toggle('is-on', x === b))
-      regen()
+      hardSwitch()
     }))
 
   document.querySelectorAll('[data-zone]').forEach((b) =>
     b.addEventListener('click', () => {
       state.zone = b.dataset.zone
       document.querySelectorAll('[data-zone]').forEach((x) => x.classList.toggle('is-on', x === b))
-      regen()
+      hardSwitch()
     }))
 
   document.querySelectorAll('[data-notes]').forEach((b) =>
     b.addEventListener('click', () => {
       state.notes = b.dataset.notes
       document.querySelectorAll('[data-notes]').forEach((x) => x.classList.toggle('is-on', x === b))
-      regen()
+      hardSwitch()
     }))
 
   $('[data-js-rndnotes]').addEventListener('click', () => {
     if (!state.patch.pitched) { setStatus('SOURCE NOT PITCHED — SET NOTES'); return }
     state.noteNonce++
-    regen()
+    hardSwitch()
     flashGlitch()
     setStatus(`NOTES ▸ ${state.patch.source.names.join(' ')}`)
   })

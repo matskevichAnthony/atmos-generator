@@ -21,7 +21,7 @@ const mkCanvas = (style) => {
 
 // ── barely-visible jagged glitch mass, lurking on the background ──
 const initDread = () => {
-  const canvas = mkCanvas({ inset: '0', width: '100vw', height: '100vh', zIndex: '0', opacity: '0.07' })
+  const canvas = mkCanvas({ inset: '0', width: '100vw', height: '100vh', zIndex: '3', opacity: '0.14', mixBlendMode: 'screen' })
   let renderer
   try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false }) } catch (e) { canvas.remove(); return }
 
@@ -38,7 +38,7 @@ const initDread = () => {
   }
   const mass = new THREE.LineSegments(
     new THREE.WireframeGeometry(geo),
-    new THREE.LineBasicMaterial({ color: 0x8a0000 }),
+    new THREE.LineBasicMaterial({ color: 0xd01010 }),
   )
   scene.add(mass)
 
