@@ -21,11 +21,7 @@ const setStatus = (text) => { $('[data-js-status]').textContent = text }
 const barsToSec = (bars, bpm) => Math.round((bars * 240 / bpm) * 100) / 100
 
 // LENGTH means something different per source shape
-const LEN_ROLE = {
-  shot: { label: 'ДЛИТЕЛЬНОСТЬ УДАРА', hint: 'SHOT: длина = насколько долго тянется сам удар (0.4 — щелчок, 4 — наплыв).' },
-  loop: { label: 'ПЕРИОД ПЕТЛИ', hint: 'LOOP: длина = сколько секунд в одном проходе петли, прежде чем она повторится.' },
-  drone: { label: 'НАПЛЫВ + ХВОСТ', hint: 'DRONE: длина = как долго нарастает и держится тон, прежде чем перезапустится.' },
-}
+const LEN_ROLE = { shot: 'ДЛИТЕЛЬНОСТЬ УДАРА', loop: 'ПЕРИОД ПЕТЛИ', drone: 'НАПЛЫВ + ХВОСТ' }
 
 // ── patch assembly + displays ──────────────────────────────
 const postSummary = () => {
@@ -91,12 +87,8 @@ const syncLenRole = () => {
   const isShot = state.shape === 'shot'
   $('[data-js-tempo]').style.display = isShot ? 'none' : ''
   if (isShot && state.bars !== null) state.bars = null
-  const role = LEN_ROLE[state.shape]
-  $('[data-js-lenrole]').textContent = role.label
-  const trunc = state.len > PREVIEW_CAP
-    ? ` ◉ ПОРЧА-ПРЕВЬЮ — первые ${PREVIEW_CAP}с; REC пишет все ${state.len}с.`
-    : ''
-  $('[data-js-lenhint]').textContent = role.hint + trunc
+  const trunc = state.len > PREVIEW_CAP ? ` · ПРЕВЬЮ ${PREVIEW_CAP}с` : ''
+  $('[data-js-lenrole]').textContent = LEN_ROLE[state.shape] + trunc
 }
 
 const regen = () => {
