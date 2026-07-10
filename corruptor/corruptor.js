@@ -314,15 +314,30 @@ let userPresets = []
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
-const presetCard = (p, ref, isUser) => {
+let activePresetRef = null
+
+// what's inside the patch — the "spec line" on big browser cards
+const specLine = (p) => {
+  const a = Object.keys(p.a ?? {}).length
+  const b = Object.keys(p.b ?? {}).length
+  const parts = [(p.shape ?? '?').toUpperCase(), (p.zone ?? 'any').toUpperCase(), `A×${a}`, `B×${b}`]
+  if (p.img) parts.push('IMG')
+  if (p.bpm) parts.push(`${p.bpm}BPM`)
+  return parts.join(' · ')
+}
+
+const presetCard = (p, ref, isUser, big = false) => {
   const cls = ['preset']
   if (p.artist) cls.push('preset--artist')
   if (isUser) cls.push('preset--user')
+  if (big) cls.push('preset--big')
+  if (ref === activePresetRef) cls.push('is-active')
   const artistRow = p.artist
     ? `<em class="preset__artist">◆ ${esc(p.artist.nick)}${p.artist.url
         ? ` <a href="${esc(p.artist.url)}" target="_blank" rel="noopener noreferrer" data-artist-link title="страница артиста">IG ↗</a>`
         : ''}</em>`
     : ''
+  const spec = big ? `<em class="preset__spec">${esc(specLine(p))}</em>` : ''
   const tools = isUser
     ? `<span class="preset__tools">
         <button data-preset-exp title="экспорт конфига .json">⇪</button>
@@ -330,38 +345,63 @@ const presetCard = (p, ref, isUser) => {
       </span>`
     : ''
   return `<div class="${cls.join(' ')}" data-preset="${ref}" role="button" tabindex="0"
-    aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${artistRow}${tools}</div>`
+    aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${spec}${artistRow}${tools}</div>`
 }
 
-// collapsed bar shows a compact preview; expand reveals artist + user presets
+// compact bar: first presets as quick-access + a key into the full browser
 const PREVIEW_COUNT = 8
-let presetsExpanded = false
 
 const renderPresets = () => {
-  const plain = [] // regular factory presets — the compact preview pool
-  const signed = [] // artist-framed presets, shown in the expanded gallery
+  const plain = PRESETS.map((p, i) => [p, i]).filter(([p]) => !p.artist)
+  const preview = plain.slice(0, PREVIEW_COUNT)
+  const total = PRESETS.length + userPresets.length
+  $('[data-js-presets]').innerHTML =
+    preview.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('') +
+    `<button class="preset preset--browse" data-js-openbrowser>
+      <b>◈ BROWSER</b><i>ВСЕ ${total} · ARTISTS</i>
+    </button>`
+}
+
+// ── serum-style browser modal ──────────────────────────────
+const renderBrowser = () => {
+  const plain = []
+  const signed = []
   PRESETS.forEach((p, i) => (p.artist ? signed : plain).push([p, i]))
 
-  const preview = plain.slice(0, PREVIEW_COUNT)
-  const rest = plain.slice(PREVIEW_COUNT)
-  const hiddenCount = rest.length + signed.length + userPresets.length
+  const section = (title, cards) => (cards.length
+    ? `<h3 class="pbrowser__sect">${title}</h3><div class="pbrowser__grid">${cards.join('')}</div>`
+    : '')
 
-  let html = preview.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
-  if (presetsExpanded) {
-    html += rest.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
-    if (signed.length || userPresets.length) {
-      html += `<span class="presets__divider" aria-hidden="true">◆ ARTIST / USER</span>`
-    }
-    html += signed.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
-    html += userPresets.map((p, i) => presetCard(p, `u:${i}`, true)).join('')
-  }
-  if (hiddenCount > 0) {
-    html += `<button class="preset preset--more" data-js-morepresets aria-expanded="${presetsExpanded}">
-      <b>${presetsExpanded ? '◂ СВЕРНУТЬ' : `ЕЩЁ +${hiddenCount} ▸`}</b>
-      <i>${presetsExpanded ? 'HIDE' : 'ARTISTS & MORE'}</i>
-    </button>`
-  }
-  $('[data-js-presets]').innerHTML = html
+  $('[data-js-pbgrid]').innerHTML =
+    section('◆ ARTIST SIGNATURE · ПОДПИСАННЫЕ ПРОДЮСЕРАМИ',
+      signed.map(([p, i]) => presetCard(p, `f:${i}`, false, true))) +
+    section('FACTORY · ЗАВОДСКИЕ',
+      plain.map(([p, i]) => presetCard(p, `f:${i}`, false, true))) +
+    section('USER · ТВОИ ЛОКАЛЬНЫЕ',
+      userPresets.map((p, i) => presetCard(p, `u:${i}`, true, true)))
+  $('[data-js-pbcount]').textContent =
+    `${signed.length} ARTIST · ${plain.length} FACTORY · ${userPresets.length} USER`
+}
+
+const browserEl = () => $('[data-js-pbrowser]')
+const isBrowserOpen = () => !browserEl().hidden
+
+const openBrowser = () => {
+  renderBrowser()
+  browserEl().hidden = false
+  document.body.classList.add('is-modal')
+  $('[data-js-pbclose]').focus()
+}
+
+const closeBrowser = () => {
+  browserEl().hidden = true
+  document.body.classList.remove('is-modal')
+}
+
+// after any library change: refresh both the bar and (if open) the modal
+const refreshPresetViews = () => {
+  renderPresets()
+  if (isBrowserOpen()) renderBrowser()
 }
 
 const presetByRef = (ref) => {
@@ -478,17 +518,14 @@ const init = () => {
 
   const handlePresetAction = (e) => {
     if (e.target.closest('[data-artist-link]')) return // let the artist link navigate
-    if (e.target.closest('[data-js-morepresets]')) {
-      presetsExpanded = !presetsExpanded
-      renderPresets()
-      return
-    }
+    if (e.target.closest('[data-js-openbrowser]')) { openBrowser(); return }
     const card = e.target.closest('[data-preset]')
     if (!card) return
     const { list, i, isUser } = presetByRef(card.dataset.preset)
     if (isUser && e.target.closest('[data-preset-del]')) {
       userPresets = removeUserPreset(i)
-      renderPresets()
+      if (activePresetRef === `u:${i}`) activePresetRef = null
+      refreshPresetViews()
       setStatus('PRESET DELETED')
       return
     }
@@ -496,22 +533,36 @@ const init = () => {
       exportUserPreset(list[i])
       return
     }
-    if (list[i]) applyPreset(list[i])
-  }
-  $('[data-js-presets]').addEventListener('click', handlePresetAction)
-  $('[data-js-presets]').addEventListener('keydown', (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-preset]')) {
-      e.preventDefault()
-      handlePresetAction(e)
+    if (list[i]) {
+      applyPreset(list[i])
+      activePresetRef = card.dataset.preset
+      refreshPresetViews() // browser stays open — click through and audition patches
     }
+  }
+  const wirePresetContainer = (el) => {
+    el.addEventListener('click', handlePresetAction)
+    el.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-preset]')) {
+        e.preventDefault()
+        handlePresetAction(e)
+      }
+    })
+  }
+  wirePresetContainer($('[data-js-presets]'))
+  wirePresetContainer($('[data-js-pbgrid]'))
+
+  // modal chrome: close button, backdrop click, escape
+  $('[data-js-pbclose]').addEventListener('click', closeBrowser)
+  browserEl().addEventListener('click', (e) => { if (e.target === browserEl()) closeBrowser() })
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isBrowserOpen()) closeBrowser()
   })
 
   $('[data-js-savepreset]').addEventListener('click', () => {
     const name = (prompt('Имя пресета:', `MY ${state.shape.toUpperCase()} ${state.seed}`) || '').trim()
     if (!name) return
     userPresets = addUserPreset(snapshotPreset(state, name.slice(0, 24).toUpperCase()))
-    presetsExpanded = true // reveal the gallery so the fresh preset is visible
-    renderPresets()
+    refreshPresetViews()
     setStatus(`SAVED ▸ ${name.toUpperCase()}`)
   })
 
@@ -524,9 +575,9 @@ const init = () => {
     try {
       const p = await parsePresetFile(file)
       userPresets = addUserPreset(p)
-      presetsExpanded = true // reveal the gallery so the imported preset is visible
-      renderPresets()
       applyPreset(p)
+      activePresetRef = `u:${userPresets.length - 1}`
+      refreshPresetViews()
       setStatus(`IMPORTED ▸ ${p.name}${p.artist ? ` · BY ${p.artist.nick}` : ''}`)
     } catch (err) {
       setStatus('BAD CONFIG FILE')
