@@ -150,6 +150,26 @@
   </section>
 </main>
 
+<!-- serum-style preset browser: full library, big cards, sections -->
+<div class="pbrowser" data-js-pbrowser hidden>
+  <div class="pbrowser__box" role="dialog" aria-modal="true" aria-label="Браузер пресетов">
+    <span class="screw screw--tl"></span><span class="screw screw--tr"></span>
+    <span class="screw screw--bl"></span><span class="screw screw--br"></span>
+    <header class="pbrowser__head">
+      <b>PRESET BROWSER</b>
+      <span class="pbrowser__count" data-js-pbcount></span>
+      <button class="key key--mini" data-js-pbclose aria-label="закрыть браузер пресетов">× CLOSE [ESC]</button>
+    </header>
+    <div class="pbrowser__body" data-js-pbgrid></div>
+    <footer class="pbrowser__foot">
+      <button class="key" data-js-savepreset>▣ SAVE PRESET</button>
+      <button class="key" data-js-importpreset>⇥ IMPORT CONFIG</button>
+      <input type="file" data-js-presetfile accept=".json,application/json" hidden>
+      <span class="note">SAVE — сохранить текущий патч локально · ⇪ на своём пресете — экспорт .json конфига: подпиши ником, пришли нам — и твой пресет попадёт в прошивку с рамкой ARTIST</span>
+    </footer>
+  </div>
+</div>
+
 <script type="module" src="./corruptor.js"></script>
 <script type="module" src="./three3d.js"></script>
 <script type="module" src="./guide.js"></script>

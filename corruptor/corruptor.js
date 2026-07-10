@@ -7,6 +7,10 @@ import { POST_MODULES } from './dsp.js'
 import { loadImage, genImage } from './image.js'
 import { state, saveState, restoreState, resetState } from './state.js'
 import { PRESETS } from './presets.js'
+import {
+  loadUserPresets, addUserPreset, removeUserPreset,
+  snapshotPreset, exportPresetFile, parsePresetFile,
+} from './userpresets.js'
 import * as engine from './engine.js'
 import { PREVIEW_CAP } from './engine.js'
 import { startViz } from './viz.js'
@@ -208,7 +212,7 @@ const renderWav = async () => {
   if (wasPlaying) play()
 }
 
-// ── randomizers ────────────────────────────────────────────
+// ── randomizers ─────────────��──────────────────────────────
 const reroll = () => {
   state.seed = randomSeedHex()
   hardSwitch()
@@ -231,18 +235,37 @@ const reset = () => {
   setStatus('RESET ▸ CLEAN SLATE')
 }
 
+// module value in a preset: amt (number) or [amt, nonce] to pin the dice roll
+const unpackMod = (v) => (Array.isArray(v)
+  ? { on: true, amt: +v[0] || 0, nonce: +v[1] || 1 }
+  : { on: true, amt: +v || 0, nonce: 1 })
+
 const applyPreset = (p) => {
   resetState()
+  state.modules.rust.on = false // presets define their own rack — no default leftovers
   Object.assign(state, {
     seed: p.seed, shape: p.shape, zone: p.zone ?? 'any', notes: p.notes ?? 'auto',
-    noteNonce: 0, len: p.len ?? 2, curve: p.curve ?? 'collapse',
+    noteNonce: p.noteNonce ?? 0, len: p.len ?? 2, curve: p.curve ?? 'collapse',
+    bpm: p.bpm ?? state.bpm, bars: p.bars ?? null,
   })
-  Object.entries(p.a ?? {}).forEach(([id, amt]) => { if (state.modules[id]) state.modules[id] = { on: true, amt, nonce: 1 } })
-  Object.entries(p.b ?? {}).forEach(([id, amt]) => { if (state.post[id]) state.post[id] = { on: true, amt, nonce: 1 } })
+  Object.entries(p.a ?? {}).forEach(([id, v]) => { if (state.modules[id]) state.modules[id] = unpackMod(v) })
+  Object.entries(p.b ?? {}).forEach(([id, v]) => { if (state.post[id]) state.post[id] = unpackMod(v) })
+  if (p.img?.imgSeed) {
+    state.image = { mode: p.img.mode ?? 'spectrum', amt: p.img.amt ?? 70, data: null, imgSeed: p.img.imgSeed }
+  }
   syncControls()
   hardSwitch()
   flashGlitch()
   setStatus(`PRESET ▸ ${p.name}`)
+  // the IMAGE UNIT joins once the seeded image is regenerated
+  if (p.img?.imgSeed) {
+    genImage(p.img.imgSeed).then((data) => {
+      if (state.image.imgSeed !== p.img.imgSeed) return // another preset won the race
+      state.image.data = data
+      showThumb(data)
+      regen()
+    })
+  }
 }
 
 const autowire = () => {
@@ -286,9 +309,123 @@ const renderRack = () => {
   $('[data-js-postrack]').innerHTML = POST_MODULES.map((m) => modCard(m, 'data-post')).join('')
 }
 
+let userPresets = []
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+let activePresetRef = null
+
+// what's inside the patch — the "spec line" on big browser cards
+// (shape is NOT repeated here: the tag badge next to the name already shows it)
+const specLine = (p) => {
+  const a = Object.keys(p.a ?? {}).length
+  const b = Object.keys(p.b ?? {}).length
+  const parts = [(p.zone ?? 'any').toUpperCase(), `A×${a}`, `B×${b}`]
+  if (p.img) parts.push('IMG')
+  if (p.bpm) parts.push(`${p.bpm}BPM`)
+  return parts.join(' · ')
+}
+
+const presetCard = (p, ref, isUser, big = false) => {
+  const cls = ['preset']
+  if (p.artist) cls.push('preset--artist')
+  if (isUser) cls.push('preset--user')
+  if (big) cls.push('preset--big')
+  if (ref === activePresetRef) cls.push('is-active')
+  const artistRow = p.artist
+    ? `<em class="preset__artist">◆ ${esc(p.artist.nick)}${p.artist.url
+        ? ` <a href="${esc(p.artist.url)}" target="_blank" rel="noopener noreferrer" data-artist-link title="страница артиста">IG ↗</a>`
+        : ''}</em>`
+    : ''
+  const spec = big ? `<em class="preset__spec">${esc(specLine(p))}</em>` : ''
+  const tools = isUser
+    ? `<span class="preset__tools">
+        <button data-preset-exp title="экспорт конфига .json">⇪</button>
+        <button data-preset-del title="удалить пресет">×</button>
+      </span>`
+    : ''
+  return `<div class="${cls.join(' ')}" data-preset="${ref}" role="button" tabindex="0"
+    aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${spec}${artistRow}${tools}</div>`
+}
+
+// compact bar: first presets as quick-access + a key into the full browser
+const PREVIEW_COUNT = 8
+
 const renderPresets = () => {
-  $('[data-js-presets]').innerHTML = PRESETS.map((p, i) =>
-    `<button class="preset" data-preset="${i}"><b>${p.name}</b><i>${p.tag}</i></button>`).join('')
+  const plain = PRESETS.map((p, i) => [p, i]).filter(([p]) => !p.artist)
+  const preview = plain.slice(0, PREVIEW_COUNT)
+  const total = PRESETS.length + userPresets.length
+  $('[data-js-presets]').innerHTML =
+    preview.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('') +
+    `<button class="preset preset--browse" data-js-openbrowser>
+      <b>◈ BROWSER</b><i>ВСЕ ${total} · ARTISTS</i>
+    </button>`
+}
+
+// ── serum-style browser modal ──────────────────────────────
+const renderBrowser = () => {
+  const plain = []
+  const signed = []
+  PRESETS.forEach((p, i) => (p.artist ? signed : plain).push([p, i]))
+
+  const section = (title, cards) => (cards.length
+    ? `<h3 class="pbrowser__sect">${title}</h3><div class="pbrowser__grid">${cards.join('')}</div>`
+    : '')
+
+  $('[data-js-pbgrid]').innerHTML =
+    section('◆ ARTIST SIGNATURE · ПОДПИСАННЫЕ ПРОДЮСЕРАМИ',
+      signed.map(([p, i]) => presetCard(p, `f:${i}`, false, true))) +
+    section('FACTORY · ЗАВОДСКИЕ',
+      plain.map(([p, i]) => presetCard(p, `f:${i}`, false, true))) +
+    section('USER · ТВОИ ЛОКАЛЬНЫЕ',
+      userPresets.map((p, i) => presetCard(p, `u:${i}`, true, true)))
+  $('[data-js-pbcount]').textContent =
+    `${signed.length} ARTIST · ${plain.length} FACTORY · ${userPresets.length} USER`
+}
+
+const browserEl = () => $('[data-js-pbrowser]')
+const isBrowserOpen = () => !browserEl().hidden
+
+const openBrowser = () => {
+  renderBrowser()
+  browserEl().hidden = false
+  document.body.classList.add('is-modal')
+  $('[data-js-pbclose]').focus()
+}
+
+const closeBrowser = () => {
+  browserEl().hidden = true
+  document.body.classList.remove('is-modal')
+}
+
+// after any library change: refresh both the bar and (if open) the modal
+const refreshPresetViews = () => {
+  renderPresets()
+  if (isBrowserOpen()) renderBrowser()
+}
+
+const presetByRef = (ref) => {
+  const [src, idx] = ref.split(':')
+  return { list: src === 'f' ? PRESETS : userPresets, i: +idx, isUser: src === 'u' }
+}
+
+// export flow: producer signs the config with a nick (+ optional instagram) —
+// that's what shows up in the ARTIST frame when we ship their preset
+const exportUserPreset = (p) => {
+  const nick = (prompt('Твой ник артиста (подпись пресета, пусто = без подписи):', p.artist?.nick ?? '') || '').trim()
+  const out = { ...p }
+  if (nick) {
+    let url = (prompt('Ссылка на инстаграм (не обязательно):', p.artist?.url ?? 'https://instagram.com/') || '').trim()
+    if (!/^https:\/\/.+\..+/.test(url) || url === 'https://instagram.com/') url = null
+    out.artist = { nick: nick.slice(0, 32), url }
+    out.tag = 'ARTIST'
+  } else {
+    delete out.artist
+    out.tag = 'USER'
+  }
+  exportPresetFile(out)
+  setStatus(`EXPORTED ▸ ${out.name}`)
 }
 
 const wireRack = (container, stateMap, attr) => {
@@ -373,16 +510,81 @@ const wireImageUnit = () => {
 // ── wiring ─────────────────────────────────────────────────
 const init = () => {
   restoreState()
+  userPresets = loadUserPresets()
   renderRack()
   renderPresets()
   wireRack($('[data-js-rack]'), state.modules, 'data-mod')
   wireRack($('[data-js-postrack]'), state.post, 'data-post')
   wireImageUnit()
 
-  $('[data-js-presets]').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-preset]')
-    if (btn) applyPreset(PRESETS[+btn.dataset.preset])
+  const handlePresetAction = (e) => {
+    if (e.target.closest('[data-artist-link]')) return // let the artist link navigate
+    if (e.target.closest('[data-js-openbrowser]')) { openBrowser(); return }
+    const card = e.target.closest('[data-preset]')
+    if (!card) return
+    const { list, i, isUser } = presetByRef(card.dataset.preset)
+    if (isUser && e.target.closest('[data-preset-del]')) {
+      userPresets = removeUserPreset(i)
+      if (activePresetRef === `u:${i}`) activePresetRef = null
+      refreshPresetViews()
+      setStatus('PRESET DELETED')
+      return
+    }
+    if (isUser && e.target.closest('[data-preset-exp]')) {
+      exportUserPreset(list[i])
+      return
+    }
+    if (list[i]) {
+      applyPreset(list[i])
+      activePresetRef = card.dataset.preset
+      refreshPresetViews() // browser stays open — click through and audition patches
+    }
+  }
+  const wirePresetContainer = (el) => {
+    el.addEventListener('click', handlePresetAction)
+    el.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-preset]')) {
+        e.preventDefault()
+        handlePresetAction(e)
+      }
+    })
+  }
+  wirePresetContainer($('[data-js-presets]'))
+  wirePresetContainer($('[data-js-pbgrid]'))
+
+  // modal chrome: close button, backdrop click, escape
+  $('[data-js-pbclose]').addEventListener('click', closeBrowser)
+  browserEl().addEventListener('click', (e) => { if (e.target === browserEl()) closeBrowser() })
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isBrowserOpen()) closeBrowser()
   })
+
+  $('[data-js-savepreset]').addEventListener('click', () => {
+    const name = (prompt('Имя пресета:', `MY ${state.shape.toUpperCase()} ${state.seed}`) || '').trim()
+    if (!name) return
+    userPresets = addUserPreset(snapshotPreset(state, name.slice(0, 24).toUpperCase()))
+    refreshPresetViews()
+    setStatus(`SAVED ▸ ${name.toUpperCase()}`)
+  })
+
+  const presetFile = $('[data-js-presetfile]')
+  $('[data-js-importpreset]').addEventListener('click', () => presetFile.click())
+  presetFile.addEventListener('change', async () => {
+    const file = presetFile.files[0]
+    presetFile.value = ''
+    if (!file) return
+    try {
+      const p = await parsePresetFile(file)
+      userPresets = addUserPreset(p)
+      applyPreset(p)
+      activePresetRef = `u:${userPresets.length - 1}`
+      refreshPresetViews()
+      setStatus(`IMPORTED ▸ ${p.name}${p.artist ? ` · BY ${p.artist.nick}` : ''}`)
+    } catch (err) {
+      setStatus('BAD CONFIG FILE')
+    }
+  })
+
   $('[data-js-reset]').addEventListener('click', reset)
 
   document.querySelectorAll('[data-curve]').forEach((b) =>
