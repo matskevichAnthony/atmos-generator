@@ -37,6 +37,24 @@ export const PRESETS = [
   { name: 'IRON CHOIR', tag: 'LOOP', seed: '1204C012', shape: 'loop', zone: 'low', notes: '2', len: 4,
     a: { mouth: 66, rust: 70, drown: 40 }, b: { robot: 52 }, curve: 'collapse' },
 
+  // ── industrial / machinery ──
+  { name: 'PISTON CULT', tag: 'LOOP', seed: 'D1E5E777', shape: 'loop', zone: 'low', notes: '2', len: 2, bpm: 132, bars: 1,
+    a: { chew: [78, 3], rust: 82, stutter: [58, 2], starve: 45 }, b: { decimate: 52, robot: 38 }, curve: 'flat' },
+  { name: 'CONVEYOR HELL', tag: 'LOOP', seed: 'FAB21C0F', shape: 'loop', zone: 'mid', notes: '2', len: 4, bpm: 120, bars: 2,
+    a: { scramble: [70, 4], chew: 60, dropout: 44, howl: 38 }, b: { skip: [64, 2], bitrot: 46 }, curve: 'collapse' },
+  { name: 'STEEL LUNG', tag: 'LOOP', seed: '57EE1AA6', shape: 'loop', zone: 'low', notes: '1', len: 4,
+    a: { mouth: [88, 3], rust: 58, seasick: 26, drown: 35 }, b: { decimate: 40, holes: 28 }, curve: 'flat' },
+  { name: 'DRILL SERMON', tag: 'SHOT', seed: 'D211BEAD', shape: 'shot', zone: 'mid', notes: '2', len: 1.8,
+    a: { stutter: [92, 5], rust: 74, dive: 48, panic: 40 }, b: { shatter: [58, 3] }, curve: 'collapse' },
+  { name: 'GAS LEAK', tag: 'SHOT', seed: '6A51EAC0', shape: 'shot', zone: 'high', notes: '1', len: 2.4,
+    a: { starve: [82, 2], howl: 66, ghost: 44 }, b: { decimate: 68, holes: 52 }, curve: 'heal' },
+  { name: 'MORGUE FREEZER', tag: 'DRONE', seed: 'C01DBED5', shape: 'drone', zone: 'low', notes: '1', len: 9,
+    a: { rust: 44, drown: 60, ghost: 38 }, b: { freeze: [82, 2], robot: 66, bitrot: 22 }, curve: 'flat' },
+  { name: 'SIREN GRAVEYARD', tag: 'DRONE', seed: 'A1A2FDEA', shape: 'drone', zone: 'mid', notes: '3', len: 8,
+    a: { seasick: [76, 3], howl: 80, drown: 55, panic: 35 }, b: { smear: 48, skip: 30 }, curve: 'collapse' },
+  { name: 'WELDING ANGEL', tag: 'SHOT', seed: 'AE1D0666', shape: 'shot', zone: 'high', notes: '3', len: 1.6,
+    a: { rust: [90, 4], chew: 65, backmask: 42, panic: 55 }, b: { bitrot: [56, 2], shatter: 38 }, curve: 'collapse' },
+
   // ── drones / atmospheres ──
   { name: 'SPECTRAL CATHEDRAL', tag: 'DRONE', seed: 'CA7ED2A1', shape: 'drone', zone: 'mid', notes: '4', len: 10,
     a: { drown: 85, ghost: 55 }, b: { smear: 75, freeze: 44, robot: 32 },

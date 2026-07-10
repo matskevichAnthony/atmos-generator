@@ -317,10 +317,11 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
 let activePresetRef = null
 
 // what's inside the patch — the "spec line" on big browser cards
+// (shape is NOT repeated here: the tag badge next to the name already shows it)
 const specLine = (p) => {
   const a = Object.keys(p.a ?? {}).length
   const b = Object.keys(p.b ?? {}).length
-  const parts = [(p.shape ?? '?').toUpperCase(), (p.zone ?? 'any').toUpperCase(), `A×${a}`, `B×${b}`]
+  const parts = [(p.zone ?? 'any').toUpperCase(), `A×${a}`, `B×${b}`]
   if (p.img) parts.push('IMG')
   if (p.bpm) parts.push(`${p.bpm}BPM`)
   return parts.join(' · ')
