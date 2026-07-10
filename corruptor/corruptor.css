@@ -131,12 +131,52 @@ h2 {
   background: #0b0b0b; color: #e8e8e8;
   border: 1px solid var(--fg); box-shadow: 2px 2px 0 var(--depth);
   padding: 6px 10px; cursor: pointer; white-space: nowrap;
+  position: relative;
 }
 .preset:hover { background: var(--fg); color: #000; box-shadow: 2px 2px 0 var(--red); }
 .preset:active { transform: translate(2px, 2px); box-shadow: 0 0 0 rgba(0,0,0,0); }
 .preset b { font: 700 12px/1 var(--mono); letter-spacing: .05em; }
 .preset i { font-style: normal; font-size: 9px; letter-spacing: .12em; color: var(--red); }
 .preset:hover i { color: #000; }
+
+/* signed artist presets — the hot frame: these are shipped producer patches */
+.preset--artist {
+  border-color: var(--red);
+  box-shadow: 3px 3px 0 rgba(255, 0, 0, .55);
+  animation: artistpulse 2.6s ease-in-out infinite;
+}
+@keyframes artistpulse {
+  50% { box-shadow: 3px 3px 0 rgba(255, 0, 0, .55), 0 0 12px rgba(255, 0, 0, .45); }
+}
+@media (prefers-reduced-motion: reduce) { .preset--artist { animation: none; } }
+.preset--artist i { color: var(--fg); background: var(--red); padding: 0 4px; }
+.preset--artist:hover i { color: var(--red); background: #000; }
+.preset__artist {
+  font-style: normal; font-size: 9px; letter-spacing: .14em;
+  color: var(--red); margin-top: 2px;
+}
+.preset:hover .preset__artist { color: #000; }
+.preset__artist a {
+  color: var(--fg); background: var(--red);
+  padding: 0 3px; text-decoration: none; font-weight: 700;
+}
+.preset__artist a:hover { background: #000; color: var(--red); outline: 1px solid var(--red); }
+
+/* user presets — locally saved, with export / delete tools */
+.preset--user { border-style: dashed; padding-right: 44px; }
+.preset__tools { position: absolute; top: 3px; right: 4px; display: flex; gap: 2px; }
+.preset__tools button {
+  background: #000; color: var(--muted); border: 1px solid var(--dim);
+  font: 11px/1 var(--mono); width: 17px; height: 17px; padding: 0; cursor: pointer;
+}
+.preset__tools button:hover { color: #000; background: var(--fg); border-color: var(--fg); }
+.preset__tools [data-preset-del]:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+.presetbar__actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 8px;
+}
+.presetbar__actions .note { margin: 0; flex: 1; min-width: 240px; }
 
 /* ── layout: panels separate, broken symmetry ── */
 .deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; align-items: stretch; }
