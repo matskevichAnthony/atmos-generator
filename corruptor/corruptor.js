@@ -333,7 +333,7 @@ const presetCard = (p, ref, isUser, big = false) => {
   if (isUser) cls.push('preset--user')
   if (big) cls.push('preset--big')
   if (ref === activePresetRef) cls.push('is-active')
-  const artistRow = p.artist
+  const artistSig = p.artist
     ? `<em class="preset__artist">◆ ${esc(p.artist.nick)}${p.artist.url
         ? ` <a href="${esc(p.artist.url)}" target="_blank" rel="noopener noreferrer" data-artist-link title="страница артиста">IG ↗</a>`
         : ''}</em>`
@@ -345,8 +345,13 @@ const presetCard = (p, ref, isUser, big = false) => {
         <button data-preset-del title="удалить пресет">×</button>
       </span>`
     : ''
+  // compact bar cards stay exactly two lines tall: the artist signature
+  // shares the tag line; the big modal cards give it its own row
+  const tagLine = big
+    ? `<i>${esc(p.tag || 'USER')}</i>${spec}${artistSig}`
+    : `<span class="preset__meta"><i>${esc(p.tag || 'USER')}</i>${artistSig}</span>`
   return `<div class="${cls.join(' ')}" data-preset="${ref}" role="button" tabindex="0"
-    aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${spec}${artistRow}${tools}</div>`
+    aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b>${tagLine}${tools}</div>`
 }
 
 // compact bar: artist signatures lead the row for hype, then factory quick-access
