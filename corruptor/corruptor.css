@@ -125,7 +125,7 @@ h2 {
 
 /* ── presets bar ── */
 .presetbar { margin-bottom: 8px; }
-.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
 .preset {
   display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
   background: #0b0b0b; color: #e8e8e8;
@@ -171,6 +171,15 @@ h2 {
 }
 .preset__tools button:hover { color: #000; background: var(--fg); border-color: var(--fg); }
 .preset__tools [data-preset-del]:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* expand toggle + divider between factory and artist/user zones */
+.preset--more { border-style: dotted; color: var(--muted); font: inherit; }
+.preset--more b { color: inherit; }
+.preset--more:hover { color: #000; }
+.presets__divider {
+  align-self: center; font-size: 9px; letter-spacing: .2em;
+  color: var(--red); border-left: 2px solid var(--red); padding-left: 8px; margin-left: 4px;
+}
 
 .presetbar__actions {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;

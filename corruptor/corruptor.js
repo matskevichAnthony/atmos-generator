@@ -333,10 +333,35 @@ const presetCard = (p, ref, isUser) => {
     aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${artistRow}${tools}</div>`
 }
 
+// collapsed bar shows a compact preview; expand reveals artist + user presets
+const PREVIEW_COUNT = 8
+let presetsExpanded = false
+
 const renderPresets = () => {
-  const factory = PRESETS.map((p, i) => presetCard(p, `f:${i}`, false))
-  const user = userPresets.map((p, i) => presetCard(p, `u:${i}`, true))
-  $('[data-js-presets]').innerHTML = factory.join('') + user.join('')
+  const plain = [] // regular factory presets — the compact preview pool
+  const signed = [] // artist-framed presets, shown in the expanded gallery
+  PRESETS.forEach((p, i) => (p.artist ? signed : plain).push([p, i]))
+
+  const preview = plain.slice(0, PREVIEW_COUNT)
+  const rest = plain.slice(PREVIEW_COUNT)
+  const hiddenCount = rest.length + signed.length + userPresets.length
+
+  let html = preview.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
+  if (presetsExpanded) {
+    html += rest.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
+    if (signed.length || userPresets.length) {
+      html += `<span class="presets__divider" aria-hidden="true">◆ ARTIST / USER</span>`
+    }
+    html += signed.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('')
+    html += userPresets.map((p, i) => presetCard(p, `u:${i}`, true)).join('')
+  }
+  if (hiddenCount > 0) {
+    html += `<button class="preset preset--more" data-js-morepresets aria-expanded="${presetsExpanded}">
+      <b>${presetsExpanded ? '◂ СВЕРНУТЬ' : `ЕЩЁ +${hiddenCount} ▸`}</b>
+      <i>${presetsExpanded ? 'HIDE' : 'ARTISTS & MORE'}</i>
+    </button>`
+  }
+  $('[data-js-presets]').innerHTML = html
 }
 
 const presetByRef = (ref) => {
@@ -453,6 +478,11 @@ const init = () => {
 
   const handlePresetAction = (e) => {
     if (e.target.closest('[data-artist-link]')) return // let the artist link navigate
+    if (e.target.closest('[data-js-morepresets]')) {
+      presetsExpanded = !presetsExpanded
+      renderPresets()
+      return
+    }
     const card = e.target.closest('[data-preset]')
     if (!card) return
     const { list, i, isUser } = presetByRef(card.dataset.preset)
@@ -480,6 +510,7 @@ const init = () => {
     const name = (prompt('Имя пресета:', `MY ${state.shape.toUpperCase()} ${state.seed}`) || '').trim()
     if (!name) return
     userPresets = addUserPreset(snapshotPreset(state, name.slice(0, 24).toUpperCase()))
+    presetsExpanded = true // reveal the gallery so the fresh preset is visible
     renderPresets()
     setStatus(`SAVED ▸ ${name.toUpperCase()}`)
   })
@@ -493,6 +524,7 @@ const init = () => {
     try {
       const p = await parsePresetFile(file)
       userPresets = addUserPreset(p)
+      presetsExpanded = true // reveal the gallery so the imported preset is visible
       renderPresets()
       applyPreset(p)
       setStatus(`IMPORTED ▸ ${p.name}${p.artist ? ` · BY ${p.artist.nick}` : ''}`)
