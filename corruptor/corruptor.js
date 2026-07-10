@@ -349,12 +349,14 @@ const presetCard = (p, ref, isUser, big = false) => {
     aria-label="пресет ${esc(p.name)}"><b>${esc(p.name)}</b><i>${esc(p.tag || 'USER')}</i>${spec}${artistRow}${tools}</div>`
 }
 
-// compact bar: first presets as quick-access + a key into the full browser
+// compact bar: artist signatures lead the row for hype, then factory quick-access
 const PREVIEW_COUNT = 8
 
 const renderPresets = () => {
-  const plain = PRESETS.map((p, i) => [p, i]).filter(([p]) => !p.artist)
-  const preview = plain.slice(0, PREVIEW_COUNT)
+  const signed = []
+  const plain = []
+  PRESETS.forEach((p, i) => (p.artist ? signed : plain).push([p, i]))
+  const preview = [...signed, ...plain].slice(0, PREVIEW_COUNT)
   const total = PRESETS.length + userPresets.length
   $('[data-js-presets]').innerHTML =
     preview.map(([p, i]) => presetCard(p, `f:${i}`, false)).join('') +
