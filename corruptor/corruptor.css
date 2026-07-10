@@ -138,6 +138,9 @@ h2 {
 .preset b { font: 700 12px/1 var(--mono); letter-spacing: .05em; }
 .preset i { font-style: normal; font-size: 9px; letter-spacing: .12em; color: var(--red); }
 .preset:hover i { color: #000; }
+/* compact cards: tag + artist signature share one line — uniform card height */
+.preset__meta { display: flex; align-items: center; gap: 6px; }
+.preset__meta .preset__artist { margin-top: 0; }
 
 /* signed artist presets — the hot frame: these are shipped producer patches */
 .preset--artist {
