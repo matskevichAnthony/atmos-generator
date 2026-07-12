@@ -3,6 +3,7 @@
 // `a` = RACK A (live fx), `b` = RACK B (offline corruption).
 // Module value: amt (number) or [amt, nonce] to pin the internal dice roll.
 // Optional: bpm, bars, img { imgSeed, mode, amt } — the IMAGE UNIT joins the patch,
+// draw { target, rate, amt, shape|steps } — the DRAW UNIT automation curve,
 // artist { nick, url } — signed preset from a producer (gets the ARTIST frame).
 
 export const PRESETS = [
@@ -54,6 +55,20 @@ export const PRESETS = [
     a: { seasick: [76, 3], howl: 80, drown: 55, panic: 35 }, b: { smear: 48, skip: 30 }, curve: 'collapse' },
   { name: 'WELDING ANGEL', tag: 'SHOT', seed: 'AE1D0666', shape: 'shot', zone: 'high', notes: '3', len: 1.6,
     a: { rust: [90, 4], chew: 65, backmask: 42, panic: 55 }, b: { bitrot: [56, 2], shatter: 38 }, curve: 'collapse' },
+
+  // ── draw unit / automation ──
+  { name: 'PUMP RITUAL', tag: 'LOOP', seed: 'ABBA7000', shape: 'loop', zone: 'low', notes: '2', len: 3.43, bpm: 140, bars: 2,
+    a: { chew: [60, 2], rust: 48, drown: 30 }, b: { bitrot: 20 },
+    draw: { target: 'volume', rate: 8, amt: 92, shape: 'pump' }, curve: 'flat' },
+  { name: 'ACID FURNACE', tag: 'LOOP', seed: 'AC1DF19E', shape: 'loop', zone: 'mid', notes: '3', len: 4, bpm: 128, bars: 2,
+    a: { howl: [72, 2], stutter: 46, rust: 38 }, b: { decimate: 26 },
+    draw: { target: 'filter', rate: 4, amt: 88, shape: 'stairs' }, curve: 'flat' },
+  { name: 'ELEVATOR TO HELL', tag: 'DRONE', seed: 'E1EFA702', shape: 'drone', zone: 'low', notes: '2', len: 8,
+    a: { drown: 65, ghost: 40, rust: 30 }, b: { smear: 44 },
+    draw: { target: 'pitch', rate: 1, amt: 55, shape: 'saw' }, curve: 'collapse' },
+  { name: 'STROBE CRUSHER', tag: 'LOOP', seed: '57206ECA', shape: 'loop', zone: 'mid', notes: '2', len: 2, bpm: 150, bars: 1,
+    a: { stutter: [68, 3], chew: 44 }, b: { skip: 30 },
+    draw: { target: 'crush', rate: 16, amt: 85, shape: 'trem' }, curve: 'flat' },
 
   // ── drones / atmospheres ──
   { name: 'SPECTRAL CATHEDRAL', tag: 'DRONE', seed: 'CA7ED2A1', shape: 'drone', zone: 'mid', notes: '4', len: 10,
