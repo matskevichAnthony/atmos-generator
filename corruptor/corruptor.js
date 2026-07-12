@@ -101,6 +101,18 @@ const syncLenRole = () => {
   $('[data-js-lenrole]').textContent = LEN_ROLE[state.shape] + trunc
 }
 
+// saveState = JSON.stringify + synchronous localStorage write; regen fires on
+// every fader input tick during a drag, so persist on a trailing debounce
+// (flushed on page hide) instead of dozens of writes per second
+let saveTimer = 0
+const saveSoon = () => {
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(saveState, 400)
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { clearTimeout(saveTimer); saveState() }
+})
+
 const regen = () => {
   state.patch = buildPatch(state.seed, state, state.modules)
   $('[data-js-seed]').value = state.seed
@@ -108,7 +120,7 @@ const regen = () => {
   renderSource()
   syncLenRole()
   syncRack()
-  saveState()
+  saveSoon()
   refreshAudio()
 }
 
@@ -597,6 +609,14 @@ const wireDrawUnit = () => {
     state.draw.steps[last.i] = last.v
     paintDrawPad()
   })
+  // repaint at most once per frame — high-rate mice fire pointermove
+  // far faster than the display can show (state updates stay per-event)
+  let paintPending = false
+  const paintOnFrame = () => {
+    if (paintPending) return
+    paintPending = true
+    requestAnimationFrame(() => { paintPending = false; paintDrawPad() })
+  }
   cv.addEventListener('pointermove', (e) => {
     if (!drawing) return
     const cur = stepAt(e)
@@ -610,7 +630,7 @@ const wireDrawUnit = () => {
         : cur.v + (last.v - cur.v) * t
     }
     last = cur
-    paintDrawPad()
+    paintOnFrame()
   })
   const endStroke = () => {
     if (!drawing) return
