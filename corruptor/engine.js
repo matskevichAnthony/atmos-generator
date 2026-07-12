@@ -34,7 +34,11 @@ let everPlayed = false
 let bufferSource = null
 let previewCtx = null
 let loopAnalyser = null
-let cleanCache = null // { sig, L, R, sampleRate }
+// LRU of clean captures: switching between recently-heard patches is instant
+// instead of a full realtime recapture every time (~2.3MB per 6s entry)
+const cleanCache = new Map() // sig → { L, R, sampleRate }
+const CACHE_MAX = 8
+const CACHE_MAX_SECONDS = PREVIEW_CAP * 2 // don't hold giant full-length renders
 const loopScope = new Float32Array(SCOPE_LEN)
 
 // ── live strudel stream (source + RACK A) ──────────────────
@@ -158,13 +162,19 @@ const processBuffer = (clean, state) => {
 
 const peakOf = (a) => { let p = 0; for (let i = 0; i < a.length; i += 7) { const v = Math.abs(a[i]); if (v > p) p = v } return p }
 
-// one clean capture, cached by (code, seconds). Only a source/RACK-A change
-// (new code) or a longer window forces a recapture; image/RACK-B/curve reuse it.
+// clean captures cached by (code, seconds), LRU-evicted. Only a source/RACK-A
+// change (new code) or a longer window forces a recapture; image/RACK-B/curve
+// reuse it, and hopping back to a recently-heard preset is instant.
 // A capture can come back silent if the context wasn't warm yet — retry so a
 // bad capture never gets cached (that was the "signal vanishes" bug).
 const getClean = async (code, seconds, onNeedCapture) => {
   const sig = `${code}#${seconds}`
-  if (cleanCache && cleanCache.sig === sig) return cleanCache
+  const hit = cleanCache.get(sig)
+  if (hit) {
+    cleanCache.delete(sig) // re-insert → freshest in LRU order
+    cleanCache.set(sig, hit)
+    return hit
+  }
   if (onNeedCapture) onNeedCapture()
   let clean
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -173,11 +183,14 @@ const getClean = async (code, seconds, onNeedCapture) => {
     resumeAudio()
     await sleep(200)
   }
-  cleanCache = { sig, ...clean }
-  return cleanCache
+  if (seconds <= CACHE_MAX_SECONDS) {
+    cleanCache.set(sig, clean)
+    if (cleanCache.size > CACHE_MAX) cleanCache.delete(cleanCache.keys().next().value)
+  }
+  return clean
 }
 
-export const clearCache = () => { cleanCache = null } // drop any stale render (used by RESET)
+export const clearCache = () => { cleanCache.clear() } // drop any stale renders (used by RESET)
 
 export const previewProcessed = async (state, onNeedCapture) => {
   const clean = await getClean(state.patch.code, Math.min(state.len, PREVIEW_CAP), onNeedCapture)

@@ -125,13 +125,18 @@ const isCorrupt = () =>
 let bouncing = false
 let bounceQueued = false
 let bounceTimer = 0
+// bumped on EVERY state change (regen) — a render started under an older
+// epoch is stale: its buffer must never reach the speakers (no ghost sound)
+let audioEpoch = 0
 
 const runProcessed = async () => {
+  if (!state.playing || !isCorrupt()) return // a stale timer must not hush the live stream
   if (bouncing) { bounceQueued = true; return }
   bouncing = true
   try {
     do {
       bounceQueued = false
+      const epoch = audioEpoch
       // onNeedCapture fires only on a real re-render (source/RACK A change);
       // image/RACK B/curve tweaks reuse the cache and skip this entirely
       const buf = await engine.previewProcessed(state, () => {
@@ -139,6 +144,7 @@ const runProcessed = async () => {
         setStatus('◉ RE-RENDER…')
       })
       if (!state.playing || !isCorrupt()) return
+      if (epoch !== audioEpoch) { bounceQueued = true; continue } // state moved on → discard, render fresh
       engine.playLoop(buf.L, buf.R, buf.sampleRate)
       setStatus('LIVE · CORRUPTED')
     } while (bounceQueued)
@@ -173,6 +179,11 @@ const scheduleLive = () => {
 // keep the running preview in sync after any param change (both modes restart
 // from the beginning, so every tweak audibly re-triggers the loop/one-shot)
 const refreshAudio = () => {
+  audioEpoch++ // any in-flight render is now stale
+  // clear BOTH timers: a leftover timer from the other mode firing late
+  // was the "sound stops reacting" bug after fast corrupt↔live toggling
+  clearTimeout(bounceTimer)
+  clearTimeout(liveTimer)
   if (!state.playing) return
   if (isCorrupt()) scheduleProcessed()
   else scheduleLive()
