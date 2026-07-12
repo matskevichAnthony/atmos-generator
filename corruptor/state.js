@@ -4,6 +4,7 @@
 import { randomSeedHex } from './rng.js'
 import { MODULES } from './modules.js'
 import { POST_MODULES } from './dsp.js'
+import { defaultDraw, sanitizeDraw } from './drawmod.js'
 
 const STORAGE_KEY = 'dc77-state'
 
@@ -20,6 +21,7 @@ export const state = {
   patch: null,
   curve: 'collapse',
   image: { mode: 'off', amt: 70, data: null, imgSeed: null },
+  draw: defaultDraw(),
   modules: Object.fromEntries(MODULES.map((m) => [m.id, { on: false, amt: 60, nonce: 0 }])),
   post: Object.fromEntries(POST_MODULES.map((m) => [m.id, { on: false, amt: 60, nonce: 0 }])),
 }
@@ -29,15 +31,16 @@ state.modules.rust.on = true
 export const resetState = () => {
   Object.assign(state, { shape: 'loop', zone: 'any', notes: 'auto', noteNonce: 0, len: 2, bars: null, curve: 'collapse' })
   state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
+  state.draw = defaultDraw()
   MODULES.forEach((m) => { state.modules[m.id] = { on: false, amt: 60, nonce: 0 } })
   POST_MODULES.forEach((m) => { state.post[m.id] = { on: false, amt: 60, nonce: 0 } })
   state.modules.rust.on = true
 }
 
 export const saveState = () => {
-  const { seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post } = state
+  const { seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post, draw } = state
   const image = { mode: state.image.mode, amt: state.image.amt, imgSeed: state.image.imgSeed }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post, image }))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, shape, zone, notes, noteNonce, len, bpm, bars, curve, modules, post, image, draw }))
 }
 
 export const restoreState = () => {
@@ -54,5 +57,9 @@ export const restoreState = () => {
     // a generated image is reproducible from its seed; an uploaded file is not
     if (saved.image?.imgSeed) Object.assign(state.image, saved.image)
     else state.image.mode = 'off'
+    if (saved.draw) {
+      const d = sanitizeDraw(saved.draw)
+      if (d) state.draw = { ...d, on: !!saved.draw.on }
+    }
   } catch (e) { /* corrupt storage — start fresh */ }
 }

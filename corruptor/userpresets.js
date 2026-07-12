@@ -6,6 +6,7 @@
 
 import { MODULES } from './modules.js'
 import { POST_MODULES } from './dsp.js'
+import { sanitizeDraw } from './drawmod.js'
 
 const KEY = 'dc77-user-presets'
 
@@ -55,6 +56,13 @@ export const snapshotPreset = (state, name) => {
   if (state.image.imgSeed && state.image.mode !== 'off') {
     p.img = { imgSeed: state.image.imgSeed, mode: state.image.mode, amt: state.image.amt }
   }
+  // the hand-drawn curve travels as plain numbers (rounded — keeps the file readable)
+  if (state.draw.on && state.shape !== 'shot') {
+    p.draw = {
+      target: state.draw.target, rate: state.draw.rate, amt: state.draw.amt,
+      steps: state.draw.steps.map((v) => Math.round(v * 100) / 100),
+    }
+  }
   return p
 }
 
@@ -76,6 +84,11 @@ export const parsePresetFile = async (file) => {
   }
   p.seed = p.seed.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 8).padStart(8, '0')
   p.name = String(p.name || 'IMPORT').slice(0, 24).toUpperCase()
+  if (p.draw) {
+    const d = sanitizeDraw(p.draw)
+    if (d) p.draw = { target: d.target, rate: d.rate, amt: d.amt, steps: d.steps }
+    else delete p.draw
+  }
   if (p.artist && typeof p.artist === 'object') {
     const url = typeof p.artist.url === 'string' && /^https:\/\//.test(p.artist.url) ? p.artist.url : null
     p.artist = { nick: String(p.artist.nick || '???').slice(0, 32), url }

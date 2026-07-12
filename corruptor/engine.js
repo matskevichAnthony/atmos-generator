@@ -8,6 +8,7 @@
 import { initStrudel, evaluate, hush, getAudioContext, getAudioContextCurrentTime } from '/node_modules/@strudel/web/dist/index.mjs'
 import { applyImage } from './image.js'
 import { runPost } from './dsp.js'
+import { applyDraw } from './drawmod.js'
 
 initStrudel()
 
@@ -149,6 +150,7 @@ const processBuffer = (clean, state) => {
   const sampleRate = clean.sampleRate
   applyImage(L, R, sampleRate, state.image, state.seed)
   runPost(L, R, sampleRate, state.seed, state.post, state.curve)
+  applyDraw(L, R, sampleRate, state) // hand-drawn automation rides on top of the wreckage
   applyFades(L, sampleRate)
   applyFades(R, sampleRate)
   return { L, R, sampleRate }

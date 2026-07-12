@@ -125,6 +125,39 @@
       <input type="range" class="fader" data-js-imgamt min="0" max="100" step="1" value="70">
       <p class="note">SPECTR — картинка звучит как спектрограмма · CARVE — выжигается в спектр звука · BEND — байты файла как PCM. Слышно на лету во время PLAY.</p>
     </section>
+
+    <section class="module module--draw" data-js-drawunit>
+      <button class="drawpower" data-js-drawpower title="on/off" aria-label="включить draw unit"></button>
+      <h2>DRAW UNIT · АВТОМАТИЗАЦИЯ</h2>
+      <canvas class="drawpad" data-js-drawpad width="512" height="160" aria-label="рисуй кривую автоматизации"></canvas>
+      <h2>TARGET · ЧТО КРУТИТ</h2>
+      <div class="btnrow">
+        <button class="key is-on" data-drawtarget="volume">VOL</button>
+        <button class="key" data-drawtarget="filter">FILTER</button>
+        <button class="key" data-drawtarget="pitch">PITCH</button>
+        <button class="key" data-drawtarget="crush">CRUSH</button>
+      </div>
+      <h2>RATE · ЦИКЛОВ НА ДЛИНУ</h2>
+      <div class="btnrow">
+        <button class="key" data-drawrate="1">×1</button>
+        <button class="key" data-drawrate="2">×2</button>
+        <button class="key is-on" data-drawrate="4">×4</button>
+        <button class="key" data-drawrate="8">×8</button>
+        <button class="key" data-drawrate="16">×16</button>
+      </div>
+      <h2>SHAPES · ЗАГОТОВКИ КРИВОЙ</h2>
+      <div class="btnrow btnrow--wrap">
+        <button class="key" data-drawshape="pump">PUMP</button>
+        <button class="key" data-drawshape="trem">TREM</button>
+        <button class="key" data-drawshape="saw">SAW</button>
+        <button class="key" data-drawshape="stairs">STAIRS</button>
+        <button class="key" data-drawshape="ramp">RAMP</button>
+        <button class="key" data-drawshape="rand">RAND</button>
+      </div>
+      <h2>DEPTH <output data-js-drawamtout>80</output></h2>
+      <input type="range" class="fader" data-js-drawamt min="0" max="100" step="1" value="80">
+      <p class="note">Рисуй кривую мышкой — она гоняет VOL / FILTER / PITCH / CRUSH по длине сэмпла (RATE = сколько циклов). Слышно на лету во время PLAY. Для one-shot не работает — кривой нужен цикл.</p>
+    </section>
   </div>
 
   <section class="rackzone">

@@ -11,6 +11,7 @@ import {
   loadUserPresets, addUserPreset, removeUserPreset,
   snapshotPreset, exportPresetFile, parsePresetFile,
 } from './userpresets.js'
+import { DRAW_N, DRAW_SHAPES, makeShape, sanitizeDraw } from './drawmod.js'
 import * as engine from './engine.js'
 import { PREVIEW_CAP } from './engine.js'
 import { startViz } from './viz.js'
@@ -37,6 +38,9 @@ const postSummary = () => {
   }
   if (state.image.data && state.image.mode !== 'off') {
     out += `\n// IMG ▸ ${state.image.mode.toUpperCase()} ${state.image.amt} · ${state.image.data.name}`
+  }
+  if (drawActive()) {
+    out += `\n// DRAW ▸ ${state.draw.target.toUpperCase()} ×${state.draw.rate} DEPTH ${state.draw.amt}`
   }
   return out
 }
@@ -87,9 +91,11 @@ const syncControls = () => {
 }
 
 const syncLenRole = () => {
-  // one-shots aren't a loop → BPM / bar quantization is meaningless, hide it
+  // one-shots aren't a loop → BPM / bar quantization is meaningless, hide it;
+  // same for the DRAW UNIT — an automation cycle needs a cycle to ride
   const isShot = state.shape === 'shot'
   $('[data-js-tempo]').style.display = isShot ? 'none' : ''
+  $('[data-js-drawunit]').style.display = isShot ? 'none' : ''
   if (isShot && state.bars !== null) state.bars = null
   const trunc = state.len > PREVIEW_CAP ? ` · ПРЕВЬЮ ${PREVIEW_CAP}с` : ''
   $('[data-js-lenrole]').textContent = LEN_ROLE[state.shape] + trunc
@@ -109,9 +115,12 @@ const regen = () => {
 // ── transport (one preview, auto live-vs-corrupted) ────────
 // live  = source + RACK A → hot-swap strudel (instant)
 // corrupt = any RACK B / image on → looped offline render, kept fresh
+const drawActive = () => state.draw.on && state.shape !== 'shot'
+
 const isCorrupt = () =>
   POST_MODULES.some((m) => state.post[m.id].on) ||
-  (state.image.data && state.image.mode !== 'off')
+  (state.image.data && state.image.mode !== 'off') ||
+  drawActive()
 
 let bouncing = false
 let bounceQueued = false
@@ -229,6 +238,7 @@ const reset = () => {
   state.image = { mode: 'off', amt: 70, data: null, imgSeed: null }
   Object.values(state.modules).forEach((m) => { m.on = false })
   $('[data-js-imgdrop]').classList.remove('has-img')
+  syncDraw()
   syncControls()
   hardSwitch()
   flashGlitch()
@@ -253,6 +263,11 @@ const applyPreset = (p) => {
   if (p.img?.imgSeed) {
     state.image = { mode: p.img.mode ?? 'spectrum', amt: p.img.amt ?? 70, data: null, imgSeed: p.img.imgSeed }
   }
+  if (p.draw) {
+    const d = sanitizeDraw(p.draw)
+    if (d) state.draw = d
+  }
+  syncDraw()
   syncControls()
   hardSwitch()
   flashGlitch()
@@ -323,6 +338,7 @@ const specLine = (p) => {
   const b = Object.keys(p.b ?? {}).length
   const parts = [(p.zone ?? 'any').toUpperCase(), `A×${a}`, `B×${b}`]
   if (p.img) parts.push('IMG')
+  if (p.draw) parts.push('DRAW')
   if (p.bpm) parts.push(`${p.bpm}BPM`)
   return parts.join(' · ')
 }
@@ -514,6 +530,122 @@ const wireImageUnit = () => {
   })
 }
 
+// ── draw unit ──────────────────────────────────────────────
+const paintDrawPad = () => {
+  const cv = $('[data-js-drawpad]')
+  const ctx = cv.getContext('2d')
+  const { width: W, height: H } = cv
+  const on = state.draw.on
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, W, H)
+  // grid: quarters vertical, mid horizontal — CRT etching
+  ctx.fillStyle = '#1c1c1c'
+  for (let g = 1; g < 8; g++) ctx.fillRect(Math.round((g / 8) * W), 0, 1, H)
+  ctx.fillRect(0, Math.round(H / 2), W, 1)
+  // step bars
+  const bw = W / DRAW_N
+  for (let i = 0; i < DRAW_N; i++) {
+    const v = state.draw.steps[i]
+    const h = Math.max(2, Math.round(v * (H - 4)))
+    const x = Math.round(i * bw)
+    ctx.fillStyle = on ? 'rgba(255,0,0,.42)' : 'rgba(138,138,138,.3)'
+    ctx.fillRect(x, H - h, Math.ceil(bw) - 1, h)
+    ctx.fillStyle = on ? '#ff0000' : '#8a8a8a' // hot cap on every bar
+    ctx.fillRect(x, H - h, Math.ceil(bw) - 1, 2)
+  }
+}
+
+const syncDraw = () => {
+  $('[data-js-drawunit]').classList.toggle('is-on', state.draw.on)
+  document.querySelectorAll('[data-drawtarget]').forEach((b) =>
+    b.classList.toggle('is-on', b.dataset.drawtarget === state.draw.target))
+  document.querySelectorAll('[data-drawrate]').forEach((b) =>
+    b.classList.toggle('is-on', +b.dataset.drawrate === state.draw.rate))
+  $('[data-js-drawamt]').value = state.draw.amt
+  $('[data-js-drawamtout]').textContent = state.draw.amt
+  paintDrawPad()
+}
+
+const wireDrawUnit = () => {
+  const cv = $('[data-js-drawpad]')
+
+  const stepAt = (e) => {
+    const r = cv.getBoundingClientRect()
+    const i = Math.floor(((e.clientX - r.left) / r.width) * DRAW_N)
+    const v = 1 - (e.clientY - r.top) / r.height
+    return { i: Math.min(DRAW_N - 1, Math.max(0, i)), v: Math.min(1, Math.max(0, v)) }
+  }
+
+  let drawing = false
+  let last = null
+  cv.addEventListener('pointerdown', (e) => {
+    drawing = true
+    try { cv.setPointerCapture(e.pointerId) } catch (err) { /* synthetic / already released pointer */ }
+    if (!state.draw.on) { state.draw.on = true; syncDraw() } // drawing means intent
+    last = stepAt(e)
+    state.draw.steps[last.i] = last.v
+    paintDrawPad()
+  })
+  cv.addEventListener('pointermove', (e) => {
+    if (!drawing) return
+    const cur = stepAt(e)
+    // interpolate between events so fast strokes leave no gaps
+    const from = Math.min(last.i, cur.i)
+    const to = Math.max(last.i, cur.i)
+    for (let i = from; i <= to; i++) {
+      const t = to === from ? 0 : (i - from) / (to - from)
+      state.draw.steps[i] = last.i <= cur.i
+        ? last.v + (cur.v - last.v) * t
+        : cur.v + (last.v - cur.v) * t
+    }
+    last = cur
+    paintDrawPad()
+  })
+  const endStroke = () => {
+    if (!drawing) return
+    drawing = false
+    regen() // one re-render per stroke, not per pixel
+    setStatus(`DRAW ▸ ${state.draw.target.toUpperCase()} CURVE`)
+  }
+  cv.addEventListener('pointerup', endStroke)
+  cv.addEventListener('pointercancel', endStroke)
+
+  $('[data-js-drawpower]').addEventListener('click', () => {
+    state.draw.on = !state.draw.on
+    syncDraw()
+    hardSwitch() // corrupt-path membership changed → clean cut
+    setStatus(state.draw.on ? 'DRAW UNIT ON' : 'DRAW UNIT OFF')
+  })
+  document.querySelectorAll('[data-drawtarget]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.draw.target = b.dataset.drawtarget
+      if (!state.draw.on) state.draw.on = true
+      syncDraw()
+      regen()
+    }))
+  document.querySelectorAll('[data-drawrate]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.draw.rate = +b.dataset.drawrate
+      if (!state.draw.on) state.draw.on = true
+      syncDraw()
+      regen()
+    }))
+  document.querySelectorAll('[data-drawshape]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.draw.steps = Array.from(makeShape(b.dataset.drawshape))
+      if (!state.draw.on) state.draw.on = true
+      syncDraw()
+      regen()
+      setStatus(`DRAW ▸ SHAPE ${b.textContent}`)
+    }))
+  $('[data-js-drawamt]').addEventListener('input', (e) => {
+    state.draw.amt = +e.target.value
+    $('[data-js-drawamtout]').textContent = state.draw.amt
+    if (!state.draw.on) { state.draw.on = true; syncDraw() }
+    regen()
+  })
+}
+
 // ── wiring ─────────────────────────────────────────────────
 const init = () => {
   restoreState()
@@ -523,6 +655,8 @@ const init = () => {
   wireRack($('[data-js-rack]'), state.modules, 'data-mod')
   wireRack($('[data-js-postrack]'), state.post, 'data-post')
   wireImageUnit()
+  wireDrawUnit()
+  syncDraw()
 
   const handlePresetAction = (e) => {
     if (e.target.closest('[data-artist-link]')) return // let the artist link navigate
